@@ -49,7 +49,11 @@ require('lazy').setup({
     config = function()
       require("nvim-treesitter.configs").setup {
         ensure_installed = { "c", "lua", "rust" },
-        highlight = { enable = true, }
+        highlight = {
+          enable = true,
+          -- Avoid Invalid 'end_row' errors for filetypes with unstable parsers
+          disable = { "markdown", "tex" },
+        }
       }
     end
   },
