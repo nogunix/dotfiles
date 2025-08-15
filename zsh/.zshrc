@@ -1,4 +1,6 @@
-# Zshの起動を高速化するために、.zshrcが更新された場合のみコンパイルする
+#==============================================================================
+# Compile .zshrc only if it has been updated, to speed up Zsh startup
+#==============================================================================
 if [[ -f ~/.zshrc && ~/.zshrc -nt ~/.zshrc.zwc ]]; then
   zcompile ~/.zshrc
 fi
@@ -6,16 +8,16 @@ fi
 #==============================================================================
 # History
 #==============================================================================
-HISTFILE=$HOME/.zsh_history     # 履歴を保存するファイル
-HISTSIZE=100000                 # メモリ上に保存する履歴のサイズ
-SAVEHIST=1000000                # 上述のファイルに保存する履歴のサイズ
+HISTFILE=$HOME/.zsh_history     # File to save command history
+HISTSIZE=100000                 # Number of history entries kept in memory
+SAVEHIST=1000000                # Number of history entries saved to HISTFILE
 
-setopt inc_append_history       # 実行時に履歴をファイルにに追加していく
-setopt share_history            # 履歴を他のシェルとリアルタイム共有する
-setopt hist_ignore_all_dups     # ヒストリーに重複を表示しない
-setopt hist_save_no_dups        # 重複するコマンドが保存されるとき、古い方を削除する。
-setopt extended_history         # コマンドのタイムスタンプをHISTFILEに記録する
-setopt hist_expire_dups_first   # HISTFILEのサイズがHISTSIZEを超える場合は、最初に重複を削除します
+setopt inc_append_history       # Append commands to history file immediately
+setopt share_history            # Share command history across all shells in real time
+setopt hist_ignore_all_dups     # Ignore duplicate commands in history
+setopt hist_save_no_dups        # When saving, remove older duplicate entries
+setopt extended_history         # Save timestamp along with commands in history
+setopt hist_expire_dups_first   # Remove duplicates first when trimming history
 
 #==============================================================================
 # Completion
@@ -23,38 +25,37 @@ setopt hist_expire_dups_first   # HISTFILEのサイズがHISTSIZEを超える場
 autoload -Uz compinit; compinit
 autoload -Uz colors; colors
 
-# Tabで選択できるようにする
+# Enable menu selection with Tab
 zstyle ':completion:*:default' menu select=2
-# 補完で大文字小文字を区別しない
+# Case-insensitive completion
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
-# ファイル補完候補に色を付ける
+# Apply LS_COLORS to completion list
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 
 #==============================================================================
 # Shell Options
 #==============================================================================
-setopt auto_param_slash       # ディレクトリ名の補完で末尾の / を自動的に付加
-setopt auto_param_keys        # カッコを自動補完
-setopt mark_dirs              # ファイル名の展開でディレクトリにマッチした場合 末尾に / を付加
-setopt auto_menu              # 補完キー連打で順に補完候補を自動で補完
-# setopt correct              # スペルミス訂正 (無効)
-setopt interactive_comments   # コマンドラインでも # 以降をコメントと見なす
-setopt magic_equal_subst      # --prefix=/usr などの = 以降でも補完できる
-setopt complete_in_word       # 語の途中でもカーソル位置で補完
-setopt print_eight_bit        # 日本語ファイル名を表示可能にする
-setopt auto_cd                # ディレクトリ名だけでcdする
-setopt no_beep                # ビープ音を消す
+setopt auto_param_slash       # Add trailing slash when completing directory names
+setopt auto_param_keys        # Auto-complete brackets
+setopt mark_dirs              # Append / when expanding directories
+setopt auto_menu              # Auto-complete through multiple matches on repeated Tab
+# setopt correct              # Command spelling correction (disabled)
+setopt interactive_comments   # Treat text after # as a comment even interactively
+setopt magic_equal_subst      # Complete after = in options like --prefix=/usr
+setopt complete_in_word       # Complete in the middle of a word
+setopt print_eight_bit        # Allow display of non-ASCII filenames
+setopt auto_cd                # Change directory by typing its name only
+setopt no_beep                # Disable terminal bell
 
 #==============================================================================
 # Keybindings
 #==============================================================================
-# コマンドを途中まで入力後、historyから絞り込み (Ctrl+P/Ctrl+N)
+# History search from partial input (Ctrl+P/Ctrl+N)
 autoload -Uz history-search-end
 zle -N history-beginning-search-backward-end history-search-end
 zle -N history-beginning-search-forward-end history-search-end
 bindkey "^P" history-beginning-search-backward-end
 bindkey "^N" history-beginning-search-forward-end
-
 
 #==============================================================================
 # Zinit (Plugin Manager)
@@ -72,8 +73,7 @@ source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
 autoload -Uz _zinit
 (( ${+_comps} )) && _comps[zinit]=_zinit
 
-# Load a few important annexes, without Turbo
-# (this is currently required for annexes)
+# Load important annexes (without Turbo)
 zinit light-mode for \
     zdharma-continuum/zinit-annex-as-monitor \
     zdharma-continuum/zinit-annex-bin-gem-node \
@@ -89,15 +89,16 @@ zinit light rupa/z
 #==============================================================================
 # Aliases & Exports
 #==============================================================================
-# --- Aliases ---
-# クリップボードへのコピー。
-# Wayland/X11環境を自動で判別し、適切なコマンド (wl-copy/xclip) を使います。
+# Clipboard copy shortcut:
+# Automatically choose wl-copy for Wayland or xclip for X11
 if [[ -n "$WAYLAND_DISPLAY" ]]; then
   alias clip='wl-copy'
 else
   alias clip='xclip -selection c'
 fi
 
-# --- Exports ---
-export LIBVA_DRIVER_NAME=radeonsi
+# Enable colored output for ls
 alias ls='ls --color=auto'
+
+# Environment variables
+# export LIBVA_DRIVER_NAME=radeonsi
