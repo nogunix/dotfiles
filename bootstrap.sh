@@ -145,3 +145,27 @@ log "Packages: ${STOW_PKGS[*]}"
 $UNSTOW || detect_pm_and_install
 run_stow
 log "Done."
+
+install_tpm() {
+  local tpm_dir="$HOME/.tmux/plugins/tpm"
+  if [[ -d "$tpm_dir" ]]; then
+    log "TPM already installed at $tpm_dir"
+  else
+    log "Installing TPM (tmux plugin manager)..."
+    git clone https://github.com/tmux-plugins/tpm "$tpm_dir"
+  fi
+}
+
+# --- Main ---
+log "Repo: $REPO_ROOT"
+log "Target: $TARGET_DIR"
+log "Packages: ${STOW_PKGS[*]}"
+$UNSTOW || detect_pm_and_install
+run_stow
+
+# 追加: tmux plugin manager
+if [[ " ${STOW_PKGS[*]} " == *" tmux "* && $UNSTOW == false ]]; then
+  install_tpm
+fi
+
+log "Done."
