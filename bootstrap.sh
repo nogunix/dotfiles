@@ -28,7 +28,7 @@ Options:
   -a              Use 'stow --adopt' (take over existing files into repo)
   -n              Dry-run (show what would happen)
   -U              Unstow (remove symlinks) instead of stowing
-  --no-install    Skip package installation (git/stow/neovim/tmux/zsh)
+  --no-install    Skip package installation (git/stow/neovim/tmux/zsh/curl)
   -h, --help      Show this help
 
 Examples:
@@ -45,7 +45,7 @@ detect_pm_and_install() {
   $NO_INSTALL && { log "Skipping package install (--no-install)."; return; }
 
   local need=()
-  for bin in git stow; do
+  for bin in git stow curl; do
     have "$bin" || need+=("$bin")
   done
   # Optional QoL tools (ignore if already installed)
@@ -66,7 +66,7 @@ detect_pm_and_install() {
     log "Installing with pacman: ${need[*]}"
     sudo pacman -Sy --noconfirm "${need[@]}"
   else
-    die "No supported package manager found. Install: ${need[*]}"
+    die "No supported package manager found. Install manually: ${need[*]}"
   fi
 }
 
@@ -74,17 +74,14 @@ detect_pm_and_install() {
 backup_if_conflict() {
   local path="$1"
   if [[ -e "$path" || -L "$path" ]]; then
-    # If it's a symlink pointing into this repo root, we don't back it up.
     if [[ -L "$path" ]]; then
       local target
       target="$(readlink -f -- "$path" || true)"
-      if [[ "${target:-}" == "$REPO_ROOT"* ]]; then
-        return 0
-      fi
+      [[ "${target:-}" == "$REPO_ROOT"* ]] && return 0
     fi
-    local ts
+    local ts bak
     ts="$(date +%Y%m%d-%H%M%S)"
-    local bak="${path}.bak.${ts}"
+    bak="${path}.bak.${ts}"
     log "Backing up existing: $path -> $bak"
     $DRY_RUN || mv -- "$path" "$bak"
   fi
@@ -92,15 +89,14 @@ backup_if_conflict() {
 
 # scan stow package to pre-backup potential conflicts
 prebackup_for_pkg() {
-  # We walk the package directory and reconstruct target paths relative to HOME
-  local pkg="$1" rel dst
-  local base="$REPO_ROOT/$pkg"
+  local pkg="$1" rel dst base
+  base="$REPO_ROOT/$pkg"
   [[ -d "$base" ]] || die "Stow package not found: $pkg ($base)"
   while IFS= read -r -d '' rel; do
-    # e.g., rel=".zshrc" or ".config/nvim/init.lua"
+    rel="${rel#./}"
     dst="$TARGET_DIR/$rel"
     backup_if_conflict "$dst"
-  done < <(cd "$base" && find . -type f -print0 | sed -z 's#^\./##')
+  done < <(cd "$base" && find . -type f -print0)
 }
 
 run_stow() {
@@ -113,7 +109,6 @@ run_stow() {
     log "Unstowing: ${STOW_PKGS[*]}"
     (set -x; stow "${sim_flag[@]}" -D -v -t "$TARGET_DIR" "${STOW_PKGS[@]}")
   else
-    # Pre-backup to be kind to users who don't want --adopt
     if ! $ADOPT; then
       for p in "${STOW_PKGS[@]}"; do
         prebackup_for_pkg "$p"
@@ -121,6 +116,26 @@ run_stow() {
     fi
     log "Stowing: ${STOW_PKGS[*]} (adopt=${ADOPT}, dry-run=${DRY_RUN})"
     (set -x; stow "${sim_flag[@]}" "${adopt_flag[@]}" -v -t "$TARGET_DIR" "${STOW_PKGS[@]}")
+  fi
+}
+
+install_tpm() {
+  local tpm_dir="$HOME/.tmux/plugins/tpm"
+  if [[ -d "$tpm_dir" ]]; then
+    log "TPM already installed at $tpm_dir"
+  else
+    log "Installing TPM (tmux plugin manager)..."
+    git clone https://github.com/tmux-plugins/tpm "$tpm_dir"
+  fi
+}
+
+install_zinit() {
+  local zinit_home="${XDG_DATA_HOME:-$HOME/.local/share}/zinit/zinit.git"
+  if [[ -d "$zinit_home" ]]; then
+    log "Zinit already installed at $zinit_home"
+  else
+    log "Installing Zinit (zsh plugin manager)..."
+    bash -c "$(curl --fail --show-error --silent --location https://raw.githubusercontent.com/zdharma-continuum/zinit/HEAD/scripts/install.sh)"
   fi
 }
 
@@ -142,30 +157,16 @@ done
 log "Repo: $REPO_ROOT"
 log "Target: $TARGET_DIR"
 log "Packages: ${STOW_PKGS[*]}"
-$UNSTOW || detect_pm_and_install
-run_stow
-log "Done."
 
-install_tpm() {
-  local tpm_dir="$HOME/.tmux/plugins/tpm"
-  if [[ -d "$tpm_dir" ]]; then
-    log "TPM already installed at $tpm_dir"
-  else
-    log "Installing TPM (tmux plugin manager)..."
-    git clone https://github.com/tmux-plugins/tpm "$tpm_dir"
-  fi
-}
-
-# --- Main ---
-log "Repo: $REPO_ROOT"
-log "Target: $TARGET_DIR"
-log "Packages: ${STOW_PKGS[*]}"
 $UNSTOW || detect_pm_and_install
 run_stow
 
-# 追加: tmux plugin manager
+# Post steps
 if [[ " ${STOW_PKGS[*]} " == *" tmux "* && $UNSTOW == false ]]; then
   install_tpm
+fi
+if [[ " ${STOW_PKGS[*]} " == *" zsh "* && $UNSTOW == false ]]; then
+  install_zinit
 fi
 
 log "Done."
