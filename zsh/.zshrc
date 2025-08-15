@@ -100,3 +100,4 @@ fi
 
 # --- Exports ---
 export LIBVA_DRIVER_NAME=radeonsi
+alias ls='ls --color=auto'
