@@ -1,0 +1,6 @@
+--languages=+C,+C++,+Python,+Lua,+Rust,+Go,+Make
+--exclude=.git
+--exclude=node_modules
+--exclude=build
+--exclude=dist
+--fields=+l --extras=+q --kinds-C=+p --kinds-c++=+p

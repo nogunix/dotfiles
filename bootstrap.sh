@@ -2,7 +2,8 @@
 set -euo pipefail
 
 # --- Config (edit here if you add more stow packages) ---
-DEFAULT_STOW_PKGS=("zsh" "nvim" "tmux")
+# Add "ctags" so we can manage ~/.ctags.d via GNU Stow
+DEFAULT_STOW_PKGS=("zsh" "nvim" "tmux" "ctags")
 
 # --- Globals ---
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -24,11 +25,11 @@ usage() {
 Usage: ./bootstrap.sh [options]
 
 Options:
-  -p "pkg1 pkg2"  Stow packages to apply (default: "zsh nvim tmux")
+  -p "pkg1 pkg2"  Stow packages to apply (default: "zsh nvim tmux ctags")
   -a              Use 'stow --adopt' (take over existing files into repo)
   -n              Dry-run (show what would happen)
   -U              Unstow (remove symlinks) instead of stowing
-  --no-install    Skip package installation (git/stow/neovim/tmux/zsh/curl)
+  --no-install    Skip package installation (git/stow/neovim/tmux/zsh/curl/ctags)
   -h, --help      Show this help
 
 Examples:
@@ -41,8 +42,8 @@ EOF
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
-detect_pm_and_install() {
-  $NO_INSTALL && { log "Skipping package install (--no-install)."; return; }
+detect_pm_and_install_base() {
+  $NO_INSTALL && { log "Skipping base package install (--no-install)."; return; }
 
   local need=()
   for bin in git stow curl; do
@@ -53,7 +54,7 @@ detect_pm_and_install() {
     have "$bin" || need+=("$bin")
   done
 
-  ((${#need[@]}==0)) && { log "All required tools already installed."; return; }
+  ((${#need[@]}==0)) && { log "All required base tools already installed."; return; }
 
   if have dnf; then
     log "Installing with dnf: ${need[*]}"
@@ -68,6 +69,60 @@ detect_pm_and_install() {
   else
     die "No supported package manager found. Install manually: ${need[*]}"
   fi
+}
+
+# Install ctags CLI if "ctags" package is selected
+install_ctags_cli_if_requested() {
+  $NO_INSTALL && { log "Skipping ctags install (--no-install)."; return; }
+
+  case " ${STOW_PKGS[*]} " in
+    *" ctags "*) ;;
+    *) return 0;;
+  esac
+
+  # If any viable ctags is present, we're good.
+  if have ctags; then
+    log "ctags CLI already available: $(ctags --version 2>/dev/null | head -n1 || echo present)"
+    return 0
+  fi
+
+  log "ctags CLI not found. Attempting to install Universal Ctags…"
+
+  if have dnf; then
+    # Fedora/RHEL系
+    if sudo dnf install -y universal-ctags; then
+      log "Installed universal-ctags via dnf."
+      return 0
+    fi
+  elif have apt-get; then
+    # Debian/Ubuntu系（近年は universal-ctags パッケージがある）
+    sudo apt-get update -y || true
+    if sudo apt-get install -y universal-ctags; then
+      log "Installed universal-ctags via apt-get."
+      return 0
+    fi
+    # フォールバック（古い環境向け）：exuberant-ctags
+    if sudo apt-get install -y exuberant-ctags; then
+      log "Installed exuberant-ctags via apt-get (fallback)."
+      return 0
+    fi
+  elif have pacman; then
+    # Arch 系（community/universal-ctags）
+    if sudo pacman -Sy --noconfirm universal-ctags; then
+      log "Installed universal-ctags via pacman."
+      return 0
+    fi
+    # フォールバック: ctags 名称のままの可能性
+    if sudo pacman -Sy --noconfirm ctags; then
+      log "Installed ctags via pacman (fallback)."
+      return 0
+    fi
+  fi
+
+  # ここまで来たら失敗（ソースビルド案内）
+  err "Failed to install ctags automatically."
+  err "Please install Universal Ctags manually or ensure 'ctags' is in PATH."
+  return 1
 }
 
 # back up a path if it exists and is NOT a symlink into this repo
@@ -97,6 +152,13 @@ prebackup_for_pkg() {
     dst="$TARGET_DIR/$rel"
     backup_if_conflict "$dst"
   done < <(cd "$base" && find . -type f -print0)
+}
+
+validate_selected_packages() {
+  local p
+  for p in "${STOW_PKGS[@]}"; do
+    [[ -d "$REPO_ROOT/$p" ]] || die "Selected package '$p' not found in repo: $REPO_ROOT/$p"
+  done
 }
 
 run_stow() {
@@ -158,7 +220,16 @@ log "Repo: $REPO_ROOT"
 log "Target: $TARGET_DIR"
 log "Packages: ${STOW_PKGS[*]}"
 
-$UNSTOW || detect_pm_and_install
+# Ensure selected packages exist before doing anything
+validate_selected_packages
+
+# Install base toolchain (git/stow/curl/neovim/tmux/zsh)
+$UNSTOW || detect_pm_and_install_base
+
+# If user chose the "ctags" package, ensure ctags CLI exists
+$UNSTOW || install_ctags_cli_if_requested || true
+
+# Perform stow/unstow
 run_stow
 
 # Post steps
@@ -170,3 +241,4 @@ if [[ " ${STOW_PKGS[*]} " == *" zsh "* && $UNSTOW == false ]]; then
 fi
 
 log "Done."
+
