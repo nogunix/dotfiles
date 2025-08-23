@@ -101,3 +101,9 @@ fi
 # Enable colored output for ls
 alias ls='ls --color=auto'
 
+#==============================================================================
+# Local Configuration
+#==============================================================================
+if [[ -f ~/.zshrc.local ]]; then
+  source ~/.zshrc.local
+fi
