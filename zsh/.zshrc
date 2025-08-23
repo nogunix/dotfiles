@@ -101,5 +101,3 @@ fi
 # Enable colored output for ls
 alias ls='ls --color=auto'
 
-# Environment variables
-# export LIBVA_DRIVER_NAME=radeonsi
