@@ -6,6 +6,7 @@ Includes automatic setup for:
 - Zsh (`.zshrc`) with [Zinit](https://github.com/zdharma-continuum/zinit) plugin manager
 - Neovim (`init.lua` and other configs)
 - Tmux (`tmux.conf`) with [TPM](https://github.com/tmux-plugins/tpm) plugin manager
+- Universal Ctags (`ctags`)
 
 ## Requirements
 
@@ -13,6 +14,7 @@ Includes automatic setup for:
 - GNU Stow
 - Curl
 - Optional: Zsh, Tmux, Neovim
+- The `ctags` CLI is installed automatically if `ctags` is in the package list
 
 The `bootstrap.sh` script will check for these and attempt to install missing packages using your system package manager (`dnf`, `apt-get`, or `pacman`).
 
@@ -31,7 +33,7 @@ The `bootstrap.sh` script will check for these and attempt to install missing pa
    ```
    This will:
    - Install required packages
-   - Stow the default packages (`zsh`, `nvim`, `tmux`)
+   - Stow the default packages (`zsh`, `nvim`, `tmux`, `ctags`)
    - Backup conflicting files with a `.bak.<timestamp>` suffix
    - Install TPM if `tmux` is in the package list
    - Install Zinit if `zsh` is in the package list
@@ -51,7 +53,7 @@ The `bootstrap.sh` script will check for these and attempt to install missing pa
 
 | Option          | Description |
 |-----------------|-------------|
-| `-p "pkg1 pkg2"` | Specify stow packages (default: `zsh nvim tmux`) |
+| `-p "pkg1 pkg2"` | Specify stow packages (default: `zsh nvim tmux ctags`) |
 | `-a`             | Use `--adopt` to move existing files into the repo |
 | `-n`             | Dry run (show what would happen) |
 | `-U`             | Unstow (remove symlinks) |
