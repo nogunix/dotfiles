@@ -98,3 +98,5 @@ When not using `--adopt`, any existing file that would conflict is automatically
 ## License
 
 This repository is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+
+This is a personal project and is not affiliated with my employer.
