@@ -89,37 +89,36 @@ install_ctags_cli_if_requested() {
   log "ctags CLI not found. Attempting to install Universal Ctags…"
 
   if have dnf; then
-    # Fedora/RHEL系
+    # Fedora/RHEL-based systems
     if sudo dnf install -y universal-ctags; then
       log "Installed universal-ctags via dnf."
       return 0
     fi
   elif have apt-get; then
-    # Debian/Ubuntu系（近年は universal-ctags パッケージがある）
+    # Debian/Ubuntu-based systems (universal-ctags package available in recent years)
     sudo apt-get update -y || true
     if sudo apt-get install -y universal-ctags; then
       log "Installed universal-ctags via apt-get."
       return 0
     fi
-    # フォールバック（古い環境向け）：exuberant-ctags
+    # Fallback (for older environments): exuberant-ctags
     if sudo apt-get install -y exuberant-ctags; then
       log "Installed exuberant-ctags via apt-get (fallback)."
       return 0
     fi
   elif have pacman; then
-    # Arch 系（community/universal-ctags）
+    # Arch-based systems (community/universal-ctags)
     if sudo pacman -Sy --noconfirm universal-ctags; then
       log "Installed universal-ctags via pacman."
       return 0
     fi
-    # フォールバック: ctags 名称のままの可能性
+    # Fallback: possibility of ctags remaining as is
     if sudo pacman -Sy --noconfirm ctags; then
       log "Installed ctags via pacman (fallback)."
       return 0
     fi
   fi
 
-  # ここまで来たら失敗（ソースビルド案内）
   err "Failed to install ctags automatically."
   err "Please install Universal Ctags manually or ensure 'ctags' is in PATH."
   return 1
