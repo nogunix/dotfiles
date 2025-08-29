@@ -9,13 +9,12 @@ vim.opt.termguicolors = true
 vim.opt.background = 'dark'
 vim.opt.showmatch = true
 vim.opt.matchtime = 1
--- vim.cmd("set mouse=") -- マウスを有効にする場合はコメントを外してください
-vim.cmd('filetype plugin indent on') -- ファイルタイプ検出、プラグイン、インデント機能を有効にする
-vim.cmd('syntax on')                -- シンタックスハイライトを有効にする
-vim.opt.title = true                -- ターミナルタイトルバーにファイル名を表示する
+-- vim.cmd("set mouse=") -- Uncomment to enable mouse
+vim.cmd('filetype plugin indent on') -- Enable file type detection, plugins, and indentation
+vim.cmd('syntax on')                -- Enable syntax highlighting
+vim.opt.title = true                -- Display filename in terminal title bar
 
----
--- ## プラグイン管理 (`lazy.nvim`)
+-- ## Plugin Management (`lazy.nvim`)
 
 -- ```lua
 -- [[ Install `lazy.nvim` plugin manager ]]
@@ -116,12 +115,12 @@ require('lazy').setup({
       local on_attach = function(_, bufnr)
         vim.api.nvim_buf_set_option(bufnr, "formatexpr",
           "v:lua.vim.lsp.formatexpr(#{timeout_ms:250})")
-        -- 必要であれば、ここにlsp_onattach_funcのようなグローバル関数を定義して呼び出せます。
+        -- If necessary, you can define and call a global function like lsp_onattach_func here.
         -- _G.lsp_onattach_func(i, bufnr)
       end
 
-      -- ここに自動でインストールしたいLSPサーバーを追加します
-      -- `ensure_installed`に自動インストールしたいサーバーを追加できます。
+      -- Add LSP servers you want to install automatically here
+      -- You can add servers you want to install automatically to `ensure_installed`.
       -- 例: ensure_installed = { "lua_ls", "rust_analyzer", "omnisharp" }
       mason_lspconfig.setup({
         ensure_installed = { "lua_ls" }, -- この設定ファイル自体を編集するためにlua_lsを追加
@@ -145,10 +144,10 @@ require('lazy').setup({
       }
       local server_settings = {
         lua_ls = lua_settings,
-        -- 古いサーバー名に対応 (sumneko_lua)
+        -- Corresponding to older server names (sumneko_lua)
         sumneko_lua = lua_settings,
         omnisharp = { useGlobalMono = "always" },
-        -- 他のサーバー設定をここに追加
+        -- Add other server settings here
         -- rust_analyzer = { ... }
       }
 
@@ -161,7 +160,7 @@ require('lazy').setup({
         end
         lspconfig[server_name].setup(opts)
       end
-      -- vim.cmd("LspStart") -- Masonとlspconfigがサーバーを管理するため、このコマンドは通常不要です。
+      --       -- This command is usually not necessary as Mason and lspconfig manage the servers.
     end,
   },
     -- Lualine (Statusline)
@@ -176,7 +175,7 @@ require('lazy').setup({
     end,
     ft = { "markdown" },
   },
-  -- === Telescope本体 + 基本設定 ===
+  -- === Telescope Core + Basic Settings ===
 {
   'nvim-telescope/telescope.nvim',
   dependencies = { 'nvim-lua/plenary.nvim' },
@@ -189,10 +188,10 @@ require('lazy').setup({
         mappings = {
           i = { ['<C-h>'] = 'which_key' },
         },
-        -- ripgrep を入れておくと live_grep が使えます: sudo dnf install ripgrep
+        -- If ripgrep is installed, live_grep can be used: sudo dnf install ripgrep
       },
       pickers = {
-        -- よく使うやつだけサクッと
+        -- Quickly select frequently used ones
         lsp_references = { fname_width = 80 },
         lsp_definitions = { fname_width = 80 },
         lsp_implementations = { fname_width = 80 },
@@ -202,7 +201,7 @@ require('lazy').setup({
   end,
 },
 
--- === fzf っぽい高速 sorter（任意だが強く推奨）===
+-- === fzf-like fast sorter (optional but highly recommended) ===
 {
   'nvim-telescope/telescope-fzf-native.nvim',
   build = 'make',
@@ -212,19 +211,19 @@ require('lazy').setup({
   end,
 },
 
--- === ctags を自動更新するなら（超定番）===
+-- === If you want to auto-update ctags (very common) ===
 {
   'ludovicchabant/vim-gutentags',
   init = function()
-    -- プロジェクトのルートに tags を自動生成
-    vim.g.gutentags_ctags_executable = 'ctags'  -- universal-ctags を想定
+    -- Auto-generate tags in the project root
+        -- Assumes universal-ctags
     vim.g.gutentags_project_root = { '.git', '.hg', '.svn', 'Makefile', 'package.json' }
     vim.g.gutentags_ctags_extra_args = {
       '--fields=+l', '--extras=+q', '--kinds-C=+p', '--kinds-c++=+p',
       '--exclude=.git', '--exclude=node_modules', '--exclude=build', '--exclude=dist',
     }
-    vim.g.gutentags_cache_dir = vim.fn.stdpath('data') .. '/tags'  -- キャッシュ置き場
-    -- NOTE: 大規模Repoで遅いと感じたら自動生成を止めて手動運用にしてもOK
+        -- Cache location
+    -- NOTE: If it feels slow in large repositories, you can stop auto-generation and operate manually.
   end,
 },
 })
@@ -251,13 +250,13 @@ vim.g.vimtex_compiler_method = 'latexmk'
 -- following line. The default is usually fine and is the symbol "\".
 -- vim.cmd('let maplocalleader = ", "')
 --
--- tags ファイルを親ディレクトリまで遡って探す
+-- Search for tags files up to the parent directory
 vim.opt.tags = "./tags;,tags"
 
--- 既存のキーバインドと衝突しづらい Telescope キーマップ
+-- Telescope keymaps that are less likely to conflict with existing keybindings
 local tb = require('telescope.builtin')
 
--- LSP系（Telescope経由でプレビュー付き選択）
+-- LSP (selection with preview via Telescope)
 vim.keymap.set('n', 'gd', tb.lsp_definitions,        { desc = 'LSP: Go to Definition (Telescope)' })
 vim.keymap.set('n', 'gr', tb.lsp_references,         { desc = 'LSP: References (Telescope)' })
 vim.keymap.set('n', 'gi', tb.lsp_implementations,    { desc = 'LSP: Implementations (Telescope)' })
@@ -265,12 +264,12 @@ vim.keymap.set('n', 'gD', tb.lsp_type_definitions,   { desc = 'LSP: Type Definit
 vim.keymap.set('n', '<leader>ds', tb.lsp_document_symbols, { desc = 'LSP: Document Symbols' })
 vim.keymap.set('n', '<leader>ws', tb.lsp_dynamic_workspace_symbols, { desc = 'LSP: Workspace Symbols' })
 
--- ctags系（Telescope ピッカー）
+-- ctags (Telescope picker)
 vim.keymap.set('n', '<leader>tt', tb.tags,           { desc = 'ctags: Project tags' })
 vim.keymap.set('n', '<leader>tb', tb.current_buffer_tags, { desc = 'ctags: Current buffer tags' })
 
--- 伝統派: 内蔵タグジャンプ（瞬間移動）
--- Ctrl-] で定義へ、Ctrl-T で戻る（Vim標準）
--- g] で複数候補がある時に選択
--- ※ これはデフォルトなので追加不要。覚えておくと便利！
+-- Traditional: Built-in tag jump (instant movement)
+-- Ctrl-] to go to definition, Ctrl-T to go back (Vim standard)
+-- g] to select when there are multiple candidates
+-- * This is default, so no need to add. Useful to remember!
 
