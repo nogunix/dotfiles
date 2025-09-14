@@ -100,6 +100,7 @@ fi
 
 # Enable colored output for ls
 alias ls='ls --color=auto'
+alias rsyncp='rsync -a --info=progress2'
 
 #==============================================================================
 # Local Configuration
