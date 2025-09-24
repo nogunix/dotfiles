@@ -12,8 +12,6 @@ vim.opt.matchtime = 1
 -- vim.cmd("set mouse=") -- Uncomment to enable mouse
 vim.cmd('filetype plugin indent on') -- Enable file type detection, plugins, and indentation
 vim.cmd('syntax on')                -- Enable syntax highlighting
-vim.cmd('autocmd BufEnter *.patch,*.diff,git-commit set filetype=diff')
-
 vim.opt.title = true                -- Display filename in terminal title bar
 
 -- ## Plugin Management (`lazy.nvim`)
