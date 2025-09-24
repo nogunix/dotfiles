@@ -64,8 +64,6 @@ Adding New Configs	README.md	/^## Adding New Configs$/;"	language:Markdown
 Backup Strategy	README.md	/^## Backup Strategy$/;"	language:Markdown
 EOF	bootstrap.sh	/^  cat <<'EOF'$/;"	language:Sh
 Examples	README.md	/^### Examples$/;"	language:Markdown
-Ft	tmux/.config/tmux/tmux.conf	/^bind -n WheelDownPane if -Ft= '#{pane_in_mode}' 'send-keys -M' 'send-keys -M'$/;"	language:Iniconf
-Ft	tmux/.config/tmux/tmux.conf	/^bind -n WheelUpPane if -Ft= '#{pane_in_mode}' 'send-keys -M' 'copy-mode -e; send-keys -M'$/;"	language:Iniconf
 Installation	README.md	/^## Installation$/;"	language:Markdown
 License	README.md	/^## License$/;"	language:Markdown
 LuaSnip	nvim/.config/nvim/lazy-lock.json	/^  "LuaSnip": { "branch": "master", "commit": "de10d8414235b0a8cabfeba60d07c24304e71f5c" },$/;"	language:JSON
@@ -135,8 +133,6 @@ expand	nvim/.config/nvim/init.lua	/^          expand = function(args)$/;"	langua
 fails when no supported package manager is found	tests/bootstrap.bats	/^@test "fails when no supported package manager is found" {$/;"	language:Bats
 fails when requested package is missing	tests/bootstrap.bats	/^@test "fails when requested package is missing" {$/;"	language:Bats
 fcitx.nvim	nvim/.config/nvim/lazy-lock.json	/^  "fcitx.nvim": { "branch": "master", "commit": "dcb6b70888aa893d3d223bb777d4117bbdac06a7" },$/;"	language:JSON
-fg	tmux/.config/tmux/tmux.conf	/^set -g pane-active-border-style "fg=#7aa2f7"$/;"	language:Iniconf
-fg	tmux/.config/tmux/tmux.conf	/^set -g pane-border-style "fg=#2A2F41"$/;"	language:Iniconf
 have	bootstrap.sh	/^have() { command -v "$1" >\/dev\/null 2>&1; }$/;"	language:Sh
 init	nvim/.config/nvim/init.lua	/^    init = function()$/;"	language:Lua
 init	nvim/.config/nvim/init.lua	/^  init = function()$/;"	language:Lua
