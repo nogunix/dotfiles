@@ -126,7 +126,7 @@ require('lazy').setup({
         ensure_installed = { "lua_ls" }, -- この設定ファイル自体を編集するためにlua_lsを追加
       })
 
-      local lspconfig = require("lspconfig")
+
 
       -- サーバーごとのカスタム設定
       local lua_settings = {
@@ -158,7 +158,7 @@ require('lazy').setup({
         if server_settings[server_name] then
           opts = vim.tbl_deep_extend("force", opts, server_settings[server_name])
         end
-        lspconfig[server_name].setup(opts)
+        vim.lsp.config(server_name, opts)
       end
       --       -- This command is usually not necessary as Mason and lspconfig manage the servers.
     end,
