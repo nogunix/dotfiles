@@ -126,7 +126,7 @@ require('lazy').setup({
         ensure_installed = { "lua_ls" }, -- この設定ファイル自体を編集するためにlua_lsを追加
       })
 
-      local lspconfig = require("lspconfig")
+      local lspconfig = vim.lsp.config
 
       -- サーバーごとのカスタム設定
       local lua_settings = {
