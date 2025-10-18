@@ -14,6 +14,7 @@ DRY_RUN=false
 UNSTOW=false
 NO_INSTALL=false
 STOW_PKGS=("${DEFAULT_STOW_PKGS[@]}")
+UNSTOW_PKGS=()
 
 # --- Helpers ---
 log()  { printf '[bootstrap] %s\n' "$*"; }
@@ -28,6 +29,7 @@ Options:
   -p "pkg1 pkg2"  Stow packages to apply (default: "zsh nvim tmux ctags")
   -a              Use 'stow --adopt' (take over existing files into repo)
   -n              Dry-run (show what would happen)
+  -u "pkg1 pkg2"  Unstow only the specified packages (implies -U)
   -U              Unstow (remove symlinks) instead of stowing
   --no-install    Skip package installation (git/stow/neovim/tmux/zsh/curl/ctags)
   -h, --help      Show this help
@@ -37,6 +39,7 @@ Examples:
   ./bootstrap.sh -p "zsh tmux" -a
   ./bootstrap.sh -n
   ./bootstrap.sh -U
+  ./bootstrap.sh -u "tmux"
 EOF
 }
 
@@ -206,6 +209,13 @@ while (( "$#" )); do
     -p) shift; IFS=' ' read -r -a STOW_PKGS <<< "${1:-}";;
     -a) ADOPT=true;;
     -n) DRY_RUN=true;;
+    -u)
+      shift
+      [[ "${1:-}" ]] || die "Missing package list for -u."
+      IFS=' ' read -r -a _tmp_unstow <<< "${1:-}"
+      UNSTOW=true
+      UNSTOW_PKGS+=("${_tmp_unstow[@]}")
+      ;;
     -U) UNSTOW=true;;
     --no-install) NO_INSTALL=true;;
     -h|--help) usage; exit 0;;
@@ -213,6 +223,11 @@ while (( "$#" )); do
   esac
   shift || true
 done
+
+# If specific packages were requested for unstow, operate on those
+if $UNSTOW && ((${#UNSTOW_PKGS[@]} > 0)); then
+  STOW_PKGS=("${UNSTOW_PKGS[@]}")
+fi
 
 # --- Main ---
 log "Repo: $REPO_ROOT"
@@ -240,4 +255,3 @@ if [[ " ${STOW_PKGS[*]} " == *" zsh "* && $UNSTOW == false ]]; then
 fi
 
 log "Done."
-
