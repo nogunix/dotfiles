@@ -61,6 +61,7 @@ The `bootstrap.sh` script will check for these and attempt to install missing pa
 | `-p "pkg1 pkg2"` | Specify stow packages (default: `zsh nvim tmux ctags`) |
 | `-a`             | Use `--adopt` to move existing files into the repo |
 | `-n`             | Dry run (show what would happen) |
+| `-u "pkg1 pkg2"` | Unstow only the listed packages (implies `-U`) |
 | `-U`             | Unstow (remove symlinks) |
 | `--no-install`   | Skip installing dependencies |
 | `-h`, `--help`   | Show help message |
@@ -82,6 +83,10 @@ The `bootstrap.sh` script will check for these and attempt to install missing pa
 - Remove all symlinks:
   ```bash
   ./bootstrap.sh -U
+  ```
+- Remove only the `tmux` symlinks:
+  ```bash
+  ./bootstrap.sh -u "tmux"
   ```
 
 ## Adding New Configs
