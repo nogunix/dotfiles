@@ -55,6 +55,22 @@ teardown() {
   [[ "$stow_args" == *"-D"* ]]
 }
 
+@test "unstows only selected packages with -u" {
+  run /bin/bash "$BATS_TEST_DIRNAME/../bootstrap.sh" -u "tmux" --no-install
+  [ "$status" -eq 0 ]
+  stow_args="$(cat "$STOW_LOG")"
+  [[ "$stow_args" == *"-D -v -t $HOME tmux"* ]]
+  [[ "$stow_args" != *"nvim"* ]]
+  [[ "$stow_args" != *"zsh"* ]]
+}
+
+@test "passes -n to stow when dry-run flag provided" {
+  run /bin/bash "$BATS_TEST_DIRNAME/../bootstrap.sh" -p "nvim" -n --no-install
+  [ "$status" -eq 0 ]
+  stow_args="$(cat "$STOW_LOG")"
+  [[ "$stow_args" == *"-n -v -t $HOME nvim"* ]]
+}
+
 @test "fails when requested package is missing" {
   run /bin/bash "$BATS_TEST_DIRNAME/../bootstrap.sh" -p "nonexistent" --no-install
   [ "$status" -ne 0 ]
