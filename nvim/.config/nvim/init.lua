@@ -121,14 +121,12 @@ require('lazy').setup({
 
       -- Add LSP servers you want to install automatically here
       -- You can add servers you want to install automatically to `ensure_installed`.
-      -- 例: ensure_installed = { "lua_ls", "rust_analyzer", "omnisharp" }
+      -- Example: ensure_installed = { "lua_ls", "rust_analyzer", "omnisharp" }
       mason_lspconfig.setup({
-        ensure_installed = { "lua_ls" }, -- この設定ファイル自体を編集するためにlua_lsを追加
+        ensure_installed = { "lua_ls" }, -- Add lua_ls so we can edit this config file itself
       })
 
-
-
-      -- サーバーごとのカスタム設定
+      -- Custom settings per server
       local lua_settings = {
         settings = {
           Lua = {
@@ -151,10 +149,10 @@ require('lazy').setup({
         -- rust_analyzer = { ... }
       }
 
-      -- インストール済みのサーバーをセットアップ
+      -- Set up each installed server
       for _, server_name in ipairs(mason_lspconfig.get_installed_servers()) do
         local opts = { on_attach = on_attach }
-        -- カスタム設定があればマージする
+        -- Merge custom settings when available
         if server_settings[server_name] then
           opts = vim.tbl_deep_extend("force", opts, server_settings[server_name])
         end
@@ -272,4 +270,3 @@ vim.keymap.set('n', '<leader>tb', tb.current_buffer_tags, { desc = 'ctags: Curre
 -- Ctrl-] to go to definition, Ctrl-T to go back (Vim standard)
 -- g] to select when there are multiple candidates
 -- * This is default, so no need to add. Useful to remember!
-
