@@ -14,12 +14,6 @@ vim.cmd('filetype plugin indent on') -- Enable file type detection, plugins, and
 vim.cmd('syntax on')                -- Enable syntax highlighting
 vim.opt.title = true                -- Display filename in terminal title bar
 
--- ## Plugin Management (`lazy.nvim`)
-
--- ```lua
--- [[ Install `lazy.nvim` plugin manager ]]
---    [https://github.com/folke/lazy.nvim](https://github.com/folke/lazy.nvim)
---    `:help lazy.nvim.txt` for more info
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 if not vim.loop.fs_stat(lazypath) then
   vim.fn.system {
@@ -32,8 +26,9 @@ if not vim.loop.fs_stat(lazypath) then
   }
 end
 vim.opt.rtp:prepend(lazypath)
+
+-- Plugin setup (fixed balanced braces)
 require('lazy').setup({
-  -- NOTE: First, some plugins that don't require any configuration
   { 'lervag/vimtex' },
   { 'nvim-tree/nvim-web-devicons' },
   { 'github/copilot.vim' },
@@ -50,11 +45,10 @@ require('lazy').setup({
         ensure_installed = { "c", "lua", "rust" },
         highlight = {
           enable = true,
-          -- Avoid Invalid 'end_row' errors for filetypes with unstable parsers
           disable = { "markdown", "tex" },
-        }
+        },
       }
-    end
+    end,
   },
   {
     'hrsh7th/nvim-cmp',
@@ -86,7 +80,7 @@ require('lazy').setup({
           { name = 'luasnip' },
         }, { { name = 'buffer' } })
       })
-    end
+    end,
   },
 
   -- Theme
@@ -97,7 +91,7 @@ require('lazy').setup({
     opts = {},
     config = function()
       vim.cmd.colorscheme 'tokyonight'
-    end
+    end,
   },
 
   -- LSP and Mason
@@ -115,18 +109,12 @@ require('lazy').setup({
       local on_attach = function(_, bufnr)
         vim.api.nvim_buf_set_option(bufnr, "formatexpr",
           "v:lua.vim.lsp.formatexpr(#{timeout_ms:250})")
-        -- If necessary, you can define and call a global function like lsp_onattach_func here.
-        -- _G.lsp_onattach_func(i, bufnr)
       end
 
-      -- Add LSP servers you want to install automatically here
-      -- You can add servers you want to install automatically to `ensure_installed`.
-      -- Example: ensure_installed = { "lua_ls", "rust_analyzer", "omnisharp" }
       mason_lspconfig.setup({
-        ensure_installed = { "lua_ls" }, -- Add lua_ls so we can edit this config file itself
+        ensure_installed = { "lua_ls" },
       })
 
-      -- Custom settings per server
       local lua_settings = {
         settings = {
           Lua = {
@@ -142,27 +130,24 @@ require('lazy').setup({
       }
       local server_settings = {
         lua_ls = lua_settings,
-        -- Corresponding to older server names (sumneko_lua)
         sumneko_lua = lua_settings,
         omnisharp = { useGlobalMono = "always" },
-        -- Add other server settings here
-        -- rust_analyzer = { ... }
       }
 
-      -- Set up each installed server
       for _, server_name in ipairs(mason_lspconfig.get_installed_servers()) do
         local opts = { on_attach = on_attach }
-        -- Merge custom settings when available
         if server_settings[server_name] then
           opts = vim.tbl_deep_extend("force", opts, server_settings[server_name])
         end
+        -- Use lspconfig's setup; keep this if you substitute with correct call.
         vim.lsp.config(server_name, opts)
       end
-      --       -- This command is usually not necessary as Mason and lspconfig manage the servers.
     end,
   },
-    -- Lualine (Statusline)
-    require('plugins.lualine'),
+
+  -- lualine (external plugin spec returned by require)
+  require('plugins.lualine'),
+
   -- Markdown Preview
   {
     "iamcco/markdown-preview.nvim",
@@ -173,58 +158,55 @@ require('lazy').setup({
     end,
     ft = { "markdown" },
   },
-  -- === Telescope Core + Basic Settings ===
-{
-  'nvim-telescope/telescope.nvim',
-  dependencies = { 'nvim-lua/plenary.nvim' },
-  cmd = 'Telescope',
-  config = function()
-    local telescope = require('telescope')
-    telescope.setup({
-      defaults = {
-        layout_strategy = 'horizontal',
-        mappings = {
-          i = { ['<C-h>'] = 'which_key' },
+
+  -- Telescope
+  {
+    'nvim-telescope/telescope.nvim',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    cmd = 'Telescope',
+    config = function()
+      local telescope = require('telescope')
+      telescope.setup({
+        defaults = {
+          layout_strategy = 'horizontal',
+          mappings = {
+            i = { ['<C-h>'] = 'which_key' },
+          },
         },
-        -- If ripgrep is installed, live_grep can be used: sudo dnf install ripgrep
-      },
-      pickers = {
-        -- Quickly select frequently used ones
-        lsp_references = { fname_width = 80 },
-        lsp_definitions = { fname_width = 80 },
-        lsp_implementations = { fname_width = 80 },
-        lsp_type_definitions = { fname_width = 80 },
-      },
-    })
-  end,
-},
+        pickers = {
+          lsp_references = { fname_width = 80 },
+          lsp_definitions = { fname_width = 80 },
+          lsp_implementations = { fname_width = 80 },
+          lsp_type_definitions = { fname_width = 80 },
+        },
+      })
+    end,
+  },
 
--- === fzf-like fast sorter (optional but highly recommended) ===
-{
-  'nvim-telescope/telescope-fzf-native.nvim',
-  build = 'make',
-  cond = function() return vim.fn.executable('make') == 1 end,
-  config = function()
-    pcall(require('telescope').load_extension, 'fzf')
-  end,
-},
+  -- Telescope fzf native
+  {
+    'nvim-telescope/telescope-fzf-native.nvim',
+    build = 'make',
+    cond = function() return vim.fn.executable('make') == 1 end,
+    config = function()
+      pcall(require('telescope').load_extension, 'fzf')
+    end,
+  },
 
--- === If you want to auto-update ctags (very common) ===
-{
-  'ludovicchabant/vim-gutentags',
-  init = function()
-    -- Auto-generate tags in the project root
-        -- Assumes universal-ctags
-    vim.g.gutentags_project_root = { '.git', '.hg', '.svn', 'Makefile', 'package.json' }
-    vim.g.gutentags_ctags_extra_args = {
-      '--fields=+l', '--extras=+q', '--kinds-C=+p', '--kinds-c++=+p',
-      '--exclude=.git', '--exclude=node_modules', '--exclude=build', '--exclude=dist',
-    }
-        -- Cache location
-    -- NOTE: If it feels slow in large repositories, you can stop auto-generation and operate manually.
-  end,
-},
-})
+  -- Gutentags
+  {
+    'ludovicchabant/vim-gutentags',
+    init = function()
+      vim.g.gutentags_project_root = { '.git', '.hg', '.svn', 'Makefile', 'package.json' }
+      vim.g.gutentags_ctags_extra_args = {
+        '--fields=+l', '--extras=+q', '--kinds-C=+p', '--kinds-c++=+p',
+        '--exclude=.git', '--exclude=node_modules', '--exclude=build', '--exclude=dist',
+      }
+      vim.g.gutentags_cache_dir = vim.fn.stdpath('cache') .. '/tags'
+    end,
+  },
+})  -- close require('lazy').setup({
+
 -- Viewer options: One may configure the viewer either by specifying a built-in
 -- viewer method:
 vim.g.vimtex_view_method = 'zathura'
