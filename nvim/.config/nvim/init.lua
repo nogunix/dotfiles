@@ -9,6 +9,14 @@ vim.opt.termguicolors = true
 vim.opt.background = 'dark'
 vim.opt.showmatch = true
 vim.opt.matchtime = 1
+
+-- Show invisible characters
+vim.opt.list = true
+vim.opt.listchars = {
+  tab = "󰌒 ",
+  space = "·",
+  trail = "×",
+}
 -- vim.cmd("set mouse=") -- Uncomment to enable mouse
 vim.cmd('filetype plugin indent on') -- Enable file type detection, plugins, and indentation
 vim.cmd('syntax on')                -- Enable syntax highlighting
@@ -204,6 +212,16 @@ require('lazy').setup({
       }
       vim.g.gutentags_cache_dir = vim.fn.stdpath('cache') .. '/tags'
     end,
+  },
+
+  -- indent-blankline.nvim
+  {
+    "lukas-reineke/indent-blankline.nvim",
+    main = "ibl",
+    opts = {
+      indent = { char = "│" },
+      whitespace = { remove_blankline_trail = false },
+    },
   },
 })  -- close require('lazy').setup({
 
