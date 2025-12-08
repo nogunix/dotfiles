@@ -11,12 +11,16 @@ vim.opt.showmatch = true
 vim.opt.matchtime = 1
 
 -- Show invisible characters
-vim.opt.list = true
-vim.opt.listchars = {
-  tab = "󰌒 ",
+ vim.opt.list = true
+ vim.opt.listchars = {
+  tab   = "» ",
   space = "·",
   trail = "×",
 }
+ vim.keymap.set("n", "<leader>l", function()
+ vim.opt.list = not vim.opt.list:get()
+ end, { desc = "Toggle listchars" })
+
 -- vim.cmd("set mouse=") -- Uncomment to enable mouse
 vim.cmd('filetype plugin indent on') -- Enable file type detection, plugins, and indentation
 vim.cmd('syntax on')                -- Enable syntax highlighting
