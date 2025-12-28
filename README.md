@@ -10,7 +10,7 @@ Includes automatic setup for:
 
 - Zsh (`.zshrc`) with [Zinit](https://github.com/zdharma-continuum/zinit) plugin manager
 - Neovim (`init.lua` and other configs)
-- Tmux (`tmux.conf`) with [TPM](https://github.com/tmux-plugins/tpm) plugin manager
+- Tmux (`tmux.conf`)
 - Universal Ctags (`ctags`)
 
 ## Requirements
@@ -40,12 +40,10 @@ The `bootstrap.sh` script will check for these and attempt to install missing pa
    - Install required packages
    - Stow the default packages (`zsh`, `nvim`, `tmux`, `ctags`)
    - Backup conflicting files with a `.bak.<timestamp>` suffix
-   - Install TPM if `tmux` is in the package list
    - Install Zinit if `zsh` is in the package list
 
 3. **Reload configurations**
    - Zsh: `exec zsh` or restart your terminal
-   - Tmux: Press <kbd>prefix</kbd> + <kbd>I</kbd> (capital i) to install plugins
    - Neovim: Launch `nvim` to verify plugins and configs
 
 ## Usage
