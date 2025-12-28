@@ -183,16 +183,6 @@ run_stow() {
   fi
 }
 
-# install_tpm() {
-#   local tpm_dir="$HOME/.tmux/plugins/tpm"
-#   if [[ -d "$tpm_dir" ]]; then
-#     log "TPM already installed at $tpm_dir"
-#   else
-#     log "Installing TPM (tmux plugin manager)..."
-#     git clone https://github.com/tmux-plugins/tpm "$tpm_dir"
-#   fi
-# }
-
 install_zinit() {
   local zinit_home="${XDG_DATA_HOME:-$HOME/.local/share}/zinit/zinit.git"
   if [[ -d "$zinit_home" ]]; then
@@ -247,9 +237,6 @@ $UNSTOW || install_ctags_cli_if_requested || true
 run_stow
 
 # Post steps
-# if [[ " ${STOW_PKGS[*]} " == *" tmux "* && $UNSTOW == false ]]; then
-#   install_tpm
-# }
 if [[ " ${STOW_PKGS[*]} " == *" zsh "* && $UNSTOW == false ]]; then
   install_zinit
 fi
