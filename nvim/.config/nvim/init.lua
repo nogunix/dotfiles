@@ -209,7 +209,7 @@ require('lazy').setup({
   {
     'ludovicchabant/vim-gutentags',
     init = function()
-      vim.g.gutentags_project_root = { '.git', '.hg', '.svn', 'Makefile', 'package.json' }
+      vim.g.gutentags_project_root = { '.git' }
       vim.g.gutentags_ctags_extra_args = {
         '--fields=+l', '--extras=+q', '--kinds-C=+p', '--kinds-c++=+p',
         '--exclude=.git', '--exclude=node_modules', '--exclude=build', '--exclude=dist',

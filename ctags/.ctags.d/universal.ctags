@@ -3,4 +3,18 @@
 --exclude=node_modules
 --exclude=build
 --exclude=dist
---fields=+l --extras=+q --kinds-C=+p --kinds-c++=+p
+--exclude=out
+--exclude=.cache
+--exclude=.local/share/containers
+--exclude=.local/share/containers/storage
+--exclude=.local/share/containers/storage/overlay
+
+--fields=+l+n
+--extras=+q+r
+
+--kinds-C=+p
+--kinds-c++=+p
+--kinds-Rust=+fmc
+--kinds-Go=+ft
+--kinds-Make=+m
+
