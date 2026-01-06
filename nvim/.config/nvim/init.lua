@@ -21,6 +21,20 @@ vim.opt.matchtime = 1
  vim.opt.list = not vim.opt.list:get()
  end, { desc = "Toggle listchars" })
 
+-- Highlight CR at end of line when fileformat is unix
+vim.api.nvim_create_autocmd({ "BufWinEnter", "InsertLeave" }, {
+  pattern = "*",
+  callback = function()
+    if vim.bo.fileformat == "unix" then
+      if vim.w.cr_match_id then
+        pcall(vim.fn.matchdelete, vim.w.cr_match_id)
+        vim.w.cr_match_id = nil
+      end
+      vim.w.cr_match_id = vim.fn.matchadd("ErrorMsg", [[\r$]])
+    end
+  end,
+})
+
 -- vim.cmd("set mouse=") -- Uncomment to enable mouse
 vim.cmd('filetype plugin indent on') -- Enable file type detection, plugins, and indentation
 vim.cmd('syntax on')                -- Enable syntax highlighting
