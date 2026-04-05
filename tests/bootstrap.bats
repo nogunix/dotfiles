@@ -12,9 +12,10 @@ setup() {
   mkdir "$STUBDIR"
   export PATH="$STUBDIR:$PATH"
   export STOW_LOG="$TMPDIR/stow.log"
+  export PM_LOG="$TMPDIR/pm.log"
 
   cat >"$STUBDIR/stow" <<'STUB'
-#!/usr/bin/env bash
+#!/bin/bash
 # simple stub to capture stow args
 printf '%s\n' "$*" >> "$STOW_LOG"
 STUB
@@ -83,4 +84,48 @@ teardown() {
   [ "$status" -ne 0 ]
   [[ "$output" == *"No supported package manager found"* ]]
   rm -rf "$temp"
+}
+
+@test "installs missing base tools with Homebrew when brew is available" {
+  isolated_bin="$TMPDIR/isolated-bin"
+  mkdir -p "$isolated_bin"
+
+  for cmd in find date mv readlink head; do
+    ln -s "$(command -v "$cmd")" "$isolated_bin/$cmd"
+  done
+
+  cp "$STUBDIR/stow" "$isolated_bin/stow"
+
+  cat >"$isolated_bin/brew" <<'STUB'
+#!/bin/bash
+printf '%s\n' "$*" >> "$PM_LOG"
+STUB
+  chmod +x "$isolated_bin/brew"
+
+  run env -i HOME="$HOME" PATH="$isolated_bin" PM_LOG="$PM_LOG" STOW_LOG="$STOW_LOG" /bin/bash "$BATS_TEST_DIRNAME/../bootstrap.sh" -p "nvim"
+  [ "$status" -eq 0 ]
+  brew_args="$(cat "$PM_LOG")"
+  [[ "$brew_args" == "install git curl neovim tmux zsh" ]]
+}
+
+@test "installs universal-ctags with Homebrew when ctags package is selected" {
+  isolated_bin="$TMPDIR/isolated-bin-ctags"
+  mkdir -p "$isolated_bin"
+
+  for cmd in find date mv readlink head; do
+    ln -s "$(command -v "$cmd")" "$isolated_bin/$cmd"
+  done
+
+  cp "$STUBDIR/stow" "$isolated_bin/stow"
+
+  cat >"$isolated_bin/brew" <<'STUB'
+#!/bin/bash
+printf '%s\n' "$*" >> "$PM_LOG"
+STUB
+  chmod +x "$isolated_bin/brew"
+
+  run env -i HOME="$HOME" PATH="$isolated_bin" PM_LOG="$PM_LOG" STOW_LOG="$STOW_LOG" /bin/bash "$BATS_TEST_DIRNAME/../bootstrap.sh" -p "ctags"
+  [ "$status" -eq 0 ]
+  brew_args="$(cat "$PM_LOG")"
+  [[ "$brew_args" == *"install universal-ctags"* ]]
 }
