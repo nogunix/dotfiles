@@ -90,13 +90,70 @@ zinit light rupa/z
 #==============================================================================
 # Aliases & Exports
 #==============================================================================
+export PATH="$HOME/.local/bin:$PATH"
+
 # Clipboard copy shortcut:
-# Automatically choose wl-copy for Wayland or xclip for X11
-if [[ -n "$WAYLAND_DISPLAY" ]]; then
-  alias clip='wl-copy'
-else
-  alias clip='xclip -selection c'
-fi
+# Prefer the repo helper, but degrade gracefully if the helper is not installed.
+clip() {
+  local data encoded osc52 max_bytes
+
+  if command -v clipboard-copy >/dev/null 2>&1; then
+    command clipboard-copy "$@"
+    return
+  fi
+
+  if [[ -n "${WAYLAND_DISPLAY:-}" ]] && command -v wl-copy >/dev/null 2>&1; then
+    command wl-copy "$@"
+    return
+  fi
+
+  if [[ -n "${DISPLAY:-}" ]] && command -v xclip >/dev/null 2>&1; then
+    command xclip -selection clipboard "$@"
+    return
+  fi
+
+  if [[ -n "${DISPLAY:-}" ]] && command -v xsel >/dev/null 2>&1; then
+    command xsel --clipboard --input "$@"
+    return
+  fi
+
+  if command -v osc52-copy >/dev/null 2>&1; then
+    command osc52-copy "$@"
+    return
+  fi
+
+  max_bytes="${OSC52_MAX_BYTES:-100000}"
+
+  if (($# > 0)); then
+    data="$*"
+  else
+    data="$(cat)"
+  fi
+
+  [[ -z "$data" ]] && return 0
+
+  if ((${#data} > max_bytes)); then
+    printf 'clip: refusing to copy %d bytes (limit: %d)\n' "${#data}" "$max_bytes" >&2
+    return 1
+  fi
+
+  if ! command -v base64 >/dev/null 2>&1; then
+    printf 'clip: base64 is required for OSC 52 fallback\n' >&2
+    return 1
+  fi
+
+  encoded="$(printf '%s' "$data" | base64 | tr -d '\r\n')"
+  osc52="$(printf '\033]52;c;%s\a' "$encoded")"
+
+  case "${TERM:-}" in
+    screen*|tmux*)
+      printf '\033Ptmux;\033%s\033\\' "$osc52"
+      ;;
+    *)
+      printf '%s' "$osc52"
+      ;;
+  esac
+}
 
 # Enable colored output for ls
 alias ls='ls --color=auto'
