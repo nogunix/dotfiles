@@ -21,13 +21,7 @@ find_real_command() {
   return 1
 }
 
-# If we are in tmux or SSH, prioritize OSC 52 because it's most likely to work
-# for the local terminal clipboard.
-if [[ -n "${TMUX:-}" || -n "${SSH_TTY:-}" || -n "${SSH_CONNECTION:-}" ]]; then
-  printf 'osc52:%s/osc52-copy\n' "$self_dir"
-  exit 0
-fi
-
+# If we are in Wayland or X11, prioritize native tools if they are available.
 if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
   if real_wl_copy="$(find_real_command wl-copy 2>/dev/null)"; then
     printf 'wl-copy:%s\n' "$real_wl_copy"
@@ -44,6 +38,13 @@ if [[ -n "${DISPLAY:-}" ]]; then
     printf 'xsel:%s\n' "$real_xsel"
     exit 0
   fi
+fi
+
+# If we are in tmux or SSH, prioritize OSC 52 because it's most likely to work
+# for the local terminal clipboard.
+if [[ -n "${TMUX:-}" || -n "${SSH_TTY:-}" || -n "${SSH_CONNECTION:-}" ]]; then
+  printf 'osc52:%s/osc52-copy\n' "$self_dir"
+  exit 0
 fi
 
 printf 'osc52:%s/osc52-copy\n' "$self_dir"

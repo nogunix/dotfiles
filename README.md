@@ -93,6 +93,7 @@ The `bootstrap.sh` script will check for these and attempt to install missing pa
 This repository includes clipboard helpers that auto-select the best available
 transport:
 
+- Wayland (`wl-copy`) when `$WAYLAND_DISPLAY` is available (e.g., via `waypipe`)
 - X11 forwarding when `$DISPLAY` is available on the remote host
 - OSC 52 when no display server is forwarded but the client terminal supports it
 
