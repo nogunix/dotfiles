@@ -68,6 +68,12 @@ _G.dotfiles_gutentags_enabled = function(file_path)
   return true
 end
 
+vim.cmd([[
+function! DotfilesGutentagsEnabled(file_path) abort
+  return v:lua.dotfiles_gutentags_enabled(a:file_path)
+endfunction
+]])
+
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 if not vim.loop.fs_stat(lazypath) then
   vim.fn.system {
@@ -253,7 +259,7 @@ require('lazy').setup({
       vim.g.gutentags_add_default_project_roots = 0
       vim.g.gutentags_add_ctrlp_root_markers = 0
       vim.g.gutentags_generate_on_missing = 0
-      vim.g.gutentags_init_user_func = 'v:lua.dotfiles_gutentags_enabled'
+      vim.g.gutentags_init_user_func = 'DotfilesGutentagsEnabled'
       vim.g.gutentags_project_root = { '.git' }
       vim.g.gutentags_ctags_extra_args = {
         '--fields=+l', '--extras=+q', '--kinds-C=+p', '--kinds-c++=+p',
