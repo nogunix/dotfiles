@@ -18,6 +18,11 @@ setup() {
   export REAL_XCLIP
 }
 
+teardown() {
+  # Kill any lingering xclip processes to prevent bats from hanging
+  pkill -u "$(id -u)" xclip || true
+}
+
 @test "copies text to xclip if DISPLAY is set" {
   if [[ -z "$DISPLAY" ]]; then
     skip "DISPLAY is not set"

@@ -10,4 +10,5 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y bats xclip xvfb
       - name: Run tests
-        run: xvfb-run bats tests
+        timeout-minutes: 5
+        run: xvfb-run -a bats tests
