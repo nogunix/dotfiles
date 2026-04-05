@@ -22,6 +22,28 @@ setopt hist_expire_dups_first   # Remove duplicates first when trimming history
 #==============================================================================
 # Completion
 #==============================================================================
+typeset -U fpath
+typeset -a _existing_fpath
+typeset _fpath_dir _completion_link
+integer _has_broken_completion
+
+for _fpath_dir in "${fpath[@]}"; do
+  [[ -d "$_fpath_dir" ]] || continue
+
+  _has_broken_completion=0
+  for _completion_link in "$_fpath_dir"/_*(N); do
+    if [[ -L "$_completion_link" && ! -e "$_completion_link" ]]; then
+      _has_broken_completion=1
+      break
+    fi
+  done
+
+  (( _has_broken_completion == 0 )) && _existing_fpath+=("$_fpath_dir")
+done
+fpath=("${_existing_fpath[@]}")
+
+unset _existing_fpath _fpath_dir _completion_link _has_broken_completion
+
 autoload -Uz compinit; compinit
 autoload -Uz colors; colors
 
@@ -145,14 +167,16 @@ clip() {
   encoded="$(printf '%s' "$data" | base64 | tr -d '\r\n')"
   osc52="$(printf '\033]52;c;%s\a' "$encoded")"
 
-  case "${TERM:-}" in
-    screen*|tmux*)
-      printf '\033Ptmux;\033%s\033\\' "$osc52"
-      ;;
-    *)
-      printf '%s' "$osc52"
-      ;;
-  esac
+  if [[ -n "${TMUX:-}" ]]; then
+    # In tmux, we can send OSC 52 directly if 'set-clipboard' is on.
+    # This also updates tmux's internal clipboard.
+    printf '%s' "$osc52"
+  elif [[ "${TERM:-}" == screen* ]]; then
+    # Screen passthrough: \eP\e]52;... \a\e\
+    printf '\033P\033%s\033\\' "$osc52"
+  else
+    printf '%s' "$osc52"
+  fi
 }
 
 # Enable colored output for ls
