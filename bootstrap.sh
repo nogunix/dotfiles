@@ -173,22 +173,21 @@ validate_selected_packages() {
 }
 
 run_stow() {
-  local sim_flag=()
-  $DRY_RUN && sim_flag=(-n)
-  local adopt_flag=()
-  $ADOPT && adopt_flag=(--adopt)
+  local stow_args=(-v -t "$TARGET_DIR")
+  $DRY_RUN && stow_args=(-n "${stow_args[@]}")
 
   if $UNSTOW; then
     log "Unstowing: ${STOW_PKGS[*]}"
-    (set -x; stow "${sim_flag[@]}" -D -v -t "$TARGET_DIR" "${STOW_PKGS[@]}")
+    (set -x; stow -D "${stow_args[@]}" "${STOW_PKGS[@]}")
   else
     if ! $ADOPT; then
       for p in "${STOW_PKGS[@]}"; do
         prebackup_for_pkg "$p"
       done
     fi
+    $ADOPT && stow_args=(--adopt "${stow_args[@]}")
     log "Stowing: ${STOW_PKGS[*]} (adopt=${ADOPT}, dry-run=${DRY_RUN})"
-    (set -x; stow "${sim_flag[@]}" "${adopt_flag[@]}" -v -t "$TARGET_DIR" "${STOW_PKGS[@]}")
+    (set -x; stow "${stow_args[@]}" "${STOW_PKGS[@]}")
   fi
 }
 
