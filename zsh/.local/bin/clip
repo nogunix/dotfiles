@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Use clipboard-copy wrapper to handle various backends (wl-copy, xclip, xsel, osc52)
+exec "$(dirname "$0")/clipboard-copy" "$@"

@@ -12,6 +12,7 @@ Includes automatic setup for:
 - Neovim (`init.lua` and other configs)
 - Tmux (`tmux.conf`)
 - Universal Ctags (`ctags`)
+- OSC 52 clipboard helpers for SSH/tmux sessions
 
 ## Requirements
 
@@ -86,6 +87,53 @@ The `bootstrap.sh` script will check for these and attempt to install missing pa
   ```bash
   ./bootstrap.sh -u "tmux"
   ```
+
+## Remote Clipboard over SSH
+
+This repository includes clipboard helpers that auto-select the best available
+transport:
+
+- X11 forwarding when `$DISPLAY` is available on the remote host
+- OSC 52 when no display server is forwarded but the client terminal supports it
+
+### What works
+
+- `tmux` copy-mode yanks (`y`, mouse selection)
+- `clip`
+- `xclip` and `xsel` copy-style usage on the remote host
+- Neovim/Vim yanks through the available clipboard provider
+
+### What does not work portably
+
+- Reading the local desktop clipboard from the remote host (`xclip -o`, `xsel -o`)
+
+OSC 52 is primarily a remote-to-local copy mechanism. If you need bidirectional
+clipboard sync, use X11 forwarding, a desktop agent, or terminal-specific tooling.
+
+### Terminal prerequisites
+
+- iTerm2:
+  Enable the setting that allows terminal apps to access the clipboard.
+- gnome-terminal / other VTE-based terminals:
+  Prefer `ssh -X` or `ssh -Y` so the remote host gets a working `$DISPLAY`.
+  The helper scripts will then use the remote system `xclip`/`xsel` instead of OSC 52.
+
+### Typical usage on the remote host
+
+```bash
+printf 'hello\n' | clip
+printf 'hello\n' | xclip -selection clipboard
+printf 'hello\n' | xsel --clipboard --input
+```
+
+Inside `tmux`, enter copy-mode and press `y` to send the selection to the local
+terminal clipboard.
+
+With `gnome-terminal`, connect using X11 forwarding:
+
+```bash
+ssh -Y user@server
+```
 
 ## Adding New Configs
 

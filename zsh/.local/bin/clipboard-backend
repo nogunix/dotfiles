@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+self_path="${BASH_SOURCE[0]}"
+self_dir="$(cd -- "${self_path%/*}" && pwd)"
+
+find_real_command() {
+  local name="$1"
+  local path_entry candidate
+
+  IFS=':' read -r -a path_entries <<< "${PATH:-}"
+  for path_entry in "${path_entries[@]}"; do
+    [[ -n "$path_entry" ]] || path_entry='.'
+    candidate="$path_entry/$name"
+    if [[ -x "$candidate" && "$(cd -- "${candidate%/*}" && pwd)/${candidate##*/}" != "$self_dir/$name" ]]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+# If we are in tmux or SSH, prioritize OSC 52 because it's most likely to work
+# for the local terminal clipboard.
+if [[ -n "${TMUX:-}" || -n "${SSH_TTY:-}" || -n "${SSH_CONNECTION:-}" ]]; then
+  printf 'osc52:%s/osc52-copy\n' "$self_dir"
+  exit 0
+fi
+
+if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
+  if real_wl_copy="$(find_real_command wl-copy 2>/dev/null)"; then
+    printf 'wl-copy:%s\n' "$real_wl_copy"
+    exit 0
+  fi
+fi
+
+if [[ -n "${DISPLAY:-}" ]]; then
+  if real_xclip="$(find_real_command xclip 2>/dev/null)"; then
+    printf 'xclip:%s\n' "$real_xclip"
+    exit 0
+  fi
+  if real_xsel="$(find_real_command xsel 2>/dev/null)"; then
+    printf 'xsel:%s\n' "$real_xsel"
+    exit 0
+  fi
+fi
+
+printf 'osc52:%s/osc52-copy\n' "$self_dir"

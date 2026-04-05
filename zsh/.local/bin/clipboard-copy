@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+self_path="${BASH_SOURCE[0]}"
+self_dir="$(cd -- "${self_path%/*}" && pwd)"
+
+backend="$("$self_dir/clipboard-backend")"
+backend_name="${backend%%:*}"
+backend_cmd="${backend#*:}"
+
+case "$backend_name" in
+  wl-copy)
+    exec "$backend_cmd" "$@"
+    ;;
+  xclip)
+    exec "$backend_cmd" -selection clipboard "$@"
+    ;;
+  xsel)
+    exec "$backend_cmd" --clipboard --input "$@"
+    ;;
+  osc52)
+    exec "$backend_cmd" "$@"
+    ;;
+esac
+
+printf 'clipboard-copy: unsupported backend %s\n' "$backend_name" >&2
+exit 1

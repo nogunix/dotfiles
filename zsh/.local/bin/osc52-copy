@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+max_bytes="${OSC52_MAX_BYTES:-100000}"
+
+if (($# > 0)); then
+  data="$*"
+else
+  data="$(cat)"
+fi
+
+if [[ -z "$data" ]]; then
+  exit 0
+fi
+
+if ((${#data} > max_bytes)); then
+  printf 'osc52-copy: refusing to copy %d bytes (limit: %d)\n' "${#data}" "$max_bytes" >&2
+  exit 1
+fi
+
+if command -v base64 >/dev/null 2>&1; then
+  encoded="$(printf '%s' "$data" | base64 | tr -d '\r\n')"
+else
+  printf 'osc52-copy: base64 is required\n' >&2
+  exit 1
+fi
+
+osc52="$(printf '\033]52;c;%s\a' "$encoded")"
+
+if [[ -n "${TMUX:-}" ]]; then
+  # In tmux, we can send OSC 52 directly if 'set-clipboard' is on.
+  # This also updates tmux's internal clipboard.
+  printf '%s' "$osc52"
+elif [[ "${TERM:-}" == screen* ]]; then
+  # Screen passthrough: \eP\e]52;... \a\e\
+  printf '\033P\033%s\033\\' "$osc52"
+else
+  printf '%s' "$osc52"
+fi
+

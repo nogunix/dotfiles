@@ -6,7 +6,8 @@ set -euo pipefail
 DEFAULT_STOW_PKGS=("zsh" "nvim" "tmux" "ctags")
 
 # --- Globals ---
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+SCRIPT_DIR="$(cd -- "${SCRIPT_PATH%/*}" && pwd)"
 REPO_ROOT="$SCRIPT_DIR"
 TARGET_DIR="$HOME"
 ADOPT=false

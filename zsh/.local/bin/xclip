@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+selection="clipboard"
+mode="input"
+files=()
+self_path="${BASH_SOURCE[0]}"
+self_dir="$(cd -- "${self_path%/*}" && pwd)"
+
+backend="$("$self_dir/clipboard-backend")"
+backend_name="${backend%%:*}"
+backend_cmd="${backend#*:}"
+
+while (($# > 0)); do
+  case "$1" in
+    -selection)
+      shift
+      selection="${1:-clipboard}"
+      ;;
+    -sel|-selection=*)
+      selection="${1#*=}"
+      ;;
+    -i|-in)
+      mode="input"
+      ;;
+    -o|-out)
+      mode="output"
+      ;;
+    -f)
+      mode="filter"
+      ;;
+    -loops|-loop|-verbose|-silent|-quiet|-display|-target|-t)
+      shift || true
+      ;;
+    --)
+      shift
+      files+=("$@")
+      break
+      ;;
+    -*)
+      ;;
+    *)
+      files+=("$1")
+      ;;
+  esac
+  shift || true
+done
+
+case "$selection" in
+  clipboard|c|primary|p)
+    ;;
+  *)
+    printf 'xclip wrapper: unsupported selection "%s"\n' "$selection" >&2
+    exit 1
+    ;;
+esac
+
+if [[ "$mode" == "output" ]]; then
+  printf 'xclip wrapper: reading the local terminal clipboard over SSH is not supported\n' >&2
+  exit 1
+fi
+
+case "$backend_name" in
+  xclip)
+    if ((${#files[@]} > 0)); then
+      exec "$backend_cmd" -selection "$selection" "${files[@]}"
+    else
+      exec "$backend_cmd" -selection "$selection"
+    fi
+    ;;
+  xsel)
+    if ((${#files[@]} > 0)); then
+      cat "${files[@]}" | "$backend_cmd" --clipboard --input
+    else
+      "$backend_cmd" --clipboard --input
+    fi
+    ;;
+  wl-copy|osc52)
+    if ((${#files[@]} > 0)); then
+      cat "${files[@]}" | "$self_dir/clipboard-copy"
+    else
+      "$self_dir/clipboard-copy"
+    fi
+    ;;
+  *)
+    printf 'xclip wrapper: unsupported backend %s\n' "$backend_name" >&2
+    exit 1
+    ;;
+esac
+
+if [[ "$mode" == "filter" ]]; then
+  if ((${#files[@]} > 0)); then
+    cat "${files[@]}"
+  fi
+fi
