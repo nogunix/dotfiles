@@ -40,6 +40,34 @@ vim.cmd('filetype plugin indent on') -- Enable file type detection, plugins, and
 vim.cmd('syntax on')                -- Enable syntax highlighting
 vim.opt.title = true                -- Display filename in terminal title bar
 
+_G.dotfiles_gutentags_enabled = function(file_path)
+  local absolute_path = vim.fn.fnamemodify(file_path, ':p')
+  if absolute_path == '' then
+    return false
+  end
+
+  local dir = vim.fs.dirname(absolute_path)
+  if not dir or dir == '' then
+    return false
+  end
+
+  local git_dir = vim.fs.find('.git', {
+    path = dir,
+    upward = true,
+    type = 'directory',
+  })[1]
+  if not git_dir then
+    return false
+  end
+
+  local home = vim.loop.os_homedir()
+  if home and home ~= '' and vim.fs.dirname(git_dir) == home then
+    return false
+  end
+
+  return true
+end
+
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 if not vim.loop.fs_stat(lazypath) then
   vim.fn.system {
@@ -222,6 +250,10 @@ require('lazy').setup({
   {
     'ludovicchabant/vim-gutentags',
     init = function()
+      vim.g.gutentags_add_default_project_roots = 0
+      vim.g.gutentags_add_ctrlp_root_markers = 0
+      vim.g.gutentags_generate_on_missing = 0
+      vim.g.gutentags_init_user_func = 'v:lua.dotfiles_gutentags_enabled'
       vim.g.gutentags_project_root = { '.git' }
       vim.g.gutentags_ctags_extra_args = {
         '--fields=+l', '--extras=+q', '--kinds-C=+p', '--kinds-c++=+p',
