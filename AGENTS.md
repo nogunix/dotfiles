@@ -67,8 +67,15 @@ bats tests/
 bats tests/bootstrap.bats
 bats tests/clipboard-backend.bats
 
+# Verify Neovim config and plugin startup headlessly
+tests/nvim-headless.sh
+
+# Optional: include :checkhealth output (may be noisier in restricted environments)
+tests/nvim-headless.sh --health
+
 # Lint shell scripts
 shellcheck bootstrap.sh zsh/.local/bin/*
+shellcheck tests/nvim-headless.sh
 ```
 
 ## Coding Standards
