@@ -70,8 +70,11 @@ detect_pm_and_install_base() {
   elif have pacman; then
     log "Installing with pacman: ${need[*]}"
     sudo pacman -Sy --noconfirm "${need[@]}"
+  elif have brew; then
+    log "Installing with Homebrew: ${need[*]}"
+    brew install "${need[@]}"
   else
-    die "No supported package manager found. Install manually: ${need[*]}"
+    die "No supported package manager found (supported: dnf, apt-get, pacman, brew). Install manually: ${need[*]}"
   fi
 }
 
@@ -119,6 +122,11 @@ install_ctags_cli_if_requested() {
     # Fallback: possibility of ctags remaining as is
     if sudo pacman -Sy --noconfirm ctags; then
       log "Installed ctags via pacman (fallback)."
+      return 0
+    fi
+  elif have brew; then
+    if brew install universal-ctags; then
+      log "Installed universal-ctags via Homebrew."
       return 0
     fi
   fi
