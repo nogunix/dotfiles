@@ -12,6 +12,9 @@ case "$backend_name" in
   wl-copy)
     exec "$backend_cmd" "$@"
     ;;
+  pbcopy)
+    exec "$backend_cmd" "$@"
+    ;;
   xclip)
     exec "$backend_cmd" -selection clipboard "$@"
     ;;

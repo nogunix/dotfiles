@@ -13,6 +13,9 @@ setup() {
   
   touch "$STUB_BIN_DIR/xclip"
   chmod +x "$STUB_BIN_DIR/xclip"
+  
+  touch "$STUB_BIN_DIR/pbcopy"
+  chmod +x "$STUB_BIN_DIR/pbcopy"
 }
 
 teardown() {
@@ -57,4 +60,14 @@ teardown() {
   run "$BIN_DIR/clipboard-backend"
   [ "$status" -eq 0 ]
   [[ "$output" == "xclip:"* ]]
+}
+
+@test "uses pbcopy on macOS" {
+  export OSTYPE=darwin21
+  unset WAYLAND_DISPLAY
+  unset DISPLAY
+  
+  run "$BIN_DIR/clipboard-backend"
+  [ "$status" -eq 0 ]
+  [[ "$output" == "pbcopy:"* ]]
 }
