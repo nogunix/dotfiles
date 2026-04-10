@@ -66,6 +66,9 @@ teardown() {
   export OSTYPE=darwin21
   unset WAYLAND_DISPLAY
   unset DISPLAY
+  unset SSH_TTY
+  unset TMUX
+  unset SSH_CONNECTION
   
   run "$BIN_DIR/clipboard-backend"
   [ "$status" -eq 0 ]
