@@ -29,6 +29,14 @@ if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
   fi
 fi
 
+# On macOS, pbcopy is the standard.
+if [[ "${OSTYPE:-}" == "darwin"* ]]; then
+  if real_pbcopy="$(find_real_command pbcopy 2>/dev/null)"; then
+    printf 'pbcopy:%s\n' "$real_pbcopy"
+    exit 0
+  fi
+fi
+
 if [[ -n "${DISPLAY:-}" ]]; then
   if real_xclip="$(find_real_command xclip 2>/dev/null)"; then
     printf 'xclip:%s\n' "$real_xclip"

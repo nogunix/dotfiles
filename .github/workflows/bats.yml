@@ -2,13 +2,26 @@ on: [push, pull_request]
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - name: Install dependencies
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y bats xclip xvfb
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install bats-core
       - name: Run tests
         timeout-minutes: 5
-        run: xvfb-run -a bats tests
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            xvfb-run -a bats tests
+          else
+            bats tests
+          fi
