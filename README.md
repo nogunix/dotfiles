@@ -6,13 +6,16 @@
 
 
 A personal dotfiles repository managed with [GNU Stow](https://www.gnu.org/software/stow/).
-Includes automatic setup for:
+It is structured as an operational setup repo: `bootstrap.sh` installs prerequisites,
+stows packages into `$HOME`, and backs up conflicting files before linking them.
+
+Includes managed configuration for:
 
 - Zsh (`.zshrc`) with [Zinit](https://github.com/zdharma-continuum/zinit) plugin manager
 - Neovim (`init.lua` and other configs)
 - Tmux (`tmux.conf`)
 - Universal Ctags (`ctags`)
-- OSC 52 clipboard helpers for SSH/tmux sessions
+- Clipboard wrappers that prefer Wayland/X11/macOS tools locally and OSC 52 for remote sessions
 
 ## Requirements
 
@@ -20,9 +23,10 @@ Includes automatic setup for:
 - GNU Stow
 - Curl
 - Optional: Zsh, Tmux, Neovim
-- The `ctags` CLI is installed automatically if `ctags` is in the package list
+- Optional: Universal Ctags when the `ctags` stow package is selected
 
-The `bootstrap.sh` script will check for these and attempt to install missing packages using your system package manager (`dnf`, `apt-get`, or `pacman`).
+The `bootstrap.sh` script checks for missing tools and attempts to install them
+using `dnf`, `apt-get`, `pacman`, or Homebrew.
 
 ## Installation
 
@@ -38,10 +42,11 @@ The `bootstrap.sh` script will check for these and attempt to install missing pa
    ./bootstrap.sh
    ```
    This will:
-   - Install required packages
+   - Install required base packages when possible
    - Stow the default packages (`zsh`, `nvim`, `tmux`, `ctags`)
    - Backup conflicting files with a `.bak.<timestamp>` suffix
-   - Install Zinit if `zsh` is in the package list
+   - Install Zinit if `zsh` is in the selected package list
+   - Attempt to install Universal Ctags if `ctags` is selected and no `ctags` binary is available
 
 3. **Reload configurations**
    - Zsh: `exec zsh` or restart your terminal
@@ -62,7 +67,7 @@ The `bootstrap.sh` script will check for these and attempt to install missing pa
 | `-n`             | Dry run (show what would happen) |
 | `-u "pkg1 pkg2"` | Unstow only the listed packages (implies `-U`) |
 | `-U`             | Unstow (remove symlinks) |
-| `--no-install`   | Skip installing dependencies |
+| `--no-install`   | Skip installing base dependencies and ctags |
 | `-h`, `--help`   | Show help message |
 
 ### Examples
@@ -91,17 +96,20 @@ The `bootstrap.sh` script will check for these and attempt to install missing pa
 ## Remote Clipboard over SSH
 
 This repository includes clipboard helpers that auto-select the best available
-transport:
+copy backend:
 
-- Wayland (`wl-copy`) when `$WAYLAND_DISPLAY` is available (e.g., via `waypipe`)
-- X11 forwarding when `$DISPLAY` is available on the remote host
-- OSC 52 when no display server is forwarded but the client terminal supports it
+- Wayland via `wl-copy` when `$WAYLAND_DISPLAY` is available
+- X11 via `xclip` or `xsel` when `$DISPLAY` is available
+- OSC 52 when running in `tmux` or over SSH without a usable display server
+- `pbcopy` for local macOS sessions
+- OSC 52 as the final fallback
 
 ### What works
 
 - `tmux` copy-mode yanks (`y`, mouse selection)
 - `clip`
-- `xclip` and `xsel` copy-style usage on the remote host
+- `clipboard-copy`
+- `xclip` and `xsel` copy-style usage
 - Neovim/Vim yanks through the available clipboard provider
 
 ### What does not work portably
@@ -119,10 +127,11 @@ clipboard sync, use X11 forwarding, a desktop agent, or terminal-specific toolin
   Prefer `ssh -X` or `ssh -Y` so the remote host gets a working `$DISPLAY`.
   The helper scripts will then use the remote system `xclip`/`xsel` instead of OSC 52.
 
-### Typical usage on the remote host
+### Typical usage
 
 ```bash
 printf 'hello\n' | clip
+printf 'hello\n' | clipboard-copy
 printf 'hello\n' | xclip -selection clipboard
 printf 'hello\n' | xsel --clipboard --input
 ```
@@ -151,6 +160,26 @@ ssh -Y user@server
 ## Backup Strategy
 
 When not using `--adopt`, any existing file that would conflict is automatically backed up with a `.bak.<timestamp>` suffix in its original location.
+
+## Validation
+
+Run these after changing the repo:
+
+```bash
+bats tests/
+shellcheck bootstrap.sh zsh/.local/bin/*
+shellcheck tests/nvim-headless.sh
+tests/nvim-headless.sh
+```
+
+Additional focused checks:
+
+```bash
+bats tests/bootstrap.bats
+bats tests/clipboard-backend.bats
+bats tests/clipboard-integration.bats
+tests/nvim-headless.sh --health
+```
 
 ## License
 
