@@ -27,12 +27,12 @@ Treat it as an operational repo, not just a collection of config files.
 - Keep shell scripts POSIX/Bash-friendly and compatible with `shellcheck`.
 - Update tests when behavior changes. Do not change behavior silently.
 
-## Gemini CLI Specifics
+## Codex Specifics
 
-- **Research First**: Before modifying `bootstrap.sh` or core clipboard scripts, read the existing logic carefully. The bootstrap script handles multiple package managers (`dnf`, `apt`, `pacman`).
-- **Surgical Edits**: Use `replace` for configuration changes to avoid overwriting user customizations if they haven't been stowed yet.
-- **Atomic Operations**: When adding a new feature that spans multiple files (e.g., a new stow package), use a single turn or a `generalist` sub-agent to ensure consistency.
-- **Tooling**: Prefer using `run_shell_command` for validation (bats, shellcheck) over manual inspection.
+- **Research First**: Before modifying `bootstrap.sh` or core clipboard scripts, read the existing logic carefully. The bootstrap script handles multiple package managers (`dnf`, `apt-get`, `pacman`, `brew`).
+- **Surgical Edits**: Make narrow changes that preserve user-managed files and existing stow behavior.
+- **Atomic Operations**: When adding a feature that spans multiple files (for example, a new stow package), keep `bootstrap.sh`, docs, and tests in sync in the same turn.
+- **Tooling**: Prefer shell commands for validation (`bats`, `shellcheck`, `tests/nvim-headless.sh`) over manual inspection alone.
 
 ## Common Procedures
 
@@ -51,6 +51,7 @@ Treat it as an operational repo, not just a collection of config files.
 
 - `clip` should remain the stable user-facing copy command.
 - `clipboard-copy` should delegate to the selected backend.
+- Backend priority belongs in `zsh/.local/bin/clipboard-backend` and should remain `wl-copy` -> `xclip`/`xsel` -> `osc52` for SSH/tmux -> `pbcopy` on local macOS -> final `osc52` fallback unless intentionally changed.
 - `xclip` and `xsel` wrappers should preserve copy-style compatibility where possible.
 - OSC 52 is copy-only here; do not pretend remote clipboard readback is portable.
 - tmux clipboard integration should continue to work over SSH sessions.
@@ -66,6 +67,7 @@ bats tests/
 # Individual test files if scope is narrow
 bats tests/bootstrap.bats
 bats tests/clipboard-backend.bats
+bats tests/clipboard-integration.bats
 
 # Verify Neovim config and plugin startup headlessly
 tests/nvim-headless.sh
@@ -88,4 +90,5 @@ shellcheck tests/nvim-headless.sh
 
 - Put user-facing setup and usage in `README.md`.
 - Put maintainer-facing constraints and editing guidance here.
+- Keep `README.md` and `AGENTS.md` aligned when install flow, validation steps, or clipboard behavior changes.
 - If adding a new managed package, update `bootstrap.sh`, docs, and tests as needed.
