@@ -166,9 +166,11 @@ require('lazy').setup({
       require("mason").setup {}
       local mason_lspconfig = require("mason-lspconfig")
       local on_attach = function(_, bufnr)
-        vim.api.nvim_buf_set_option(bufnr, "formatexpr",
-          "v:lua.vim.lsp.formatexpr(#{timeout_ms:250})")
+        vim.bo[bufnr].formatexpr = "v:lua.vim.lsp.formatexpr(#{timeout_ms:250})"
       end
+
+      -- Register global config
+      vim.lsp.config("*", { on_attach = on_attach })
 
       mason_lspconfig.setup({
         ensure_installed = { "lua_ls" },
@@ -194,12 +196,10 @@ require('lazy').setup({
       }
 
       for _, server_name in ipairs(mason_lspconfig.get_installed_servers()) do
-        local opts = { on_attach = on_attach }
         if server_settings[server_name] then
-          opts = vim.tbl_deep_extend("force", opts, server_settings[server_name])
+          vim.lsp.config(server_name, server_settings[server_name])
         end
-        -- Use lspconfig's setup; keep this if you substitute with correct call.
-        vim.lsp.config(server_name, opts)
+        vim.lsp.enable(server_name)
       end
     end,
   },
