@@ -46,6 +46,42 @@ EOF
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
+# Print the first supported package manager found in PATH; return 1 if none.
+detect_pm() {
+  local pm
+  for pm in dnf apt-get pacman brew; do
+    have "$pm" && { printf '%s\n' "$pm"; return 0; }
+  done
+  return 1
+}
+
+# pm_install <pm> <pkg...> — install packages via the given package manager.
+pm_install() {
+  local pm="$1"; shift
+  case "$pm" in
+    dnf)     sudo dnf install -y "$@";;
+    apt-get) sudo apt-get update -y
+             sudo apt-get install -y "$@";;
+    pacman)  sudo pacman -Sy --noconfirm "$@";;
+    brew)    brew install "$@";;
+    *)       return 1;;
+  esac
+}
+
+# pm_install_ctags <pm> — install Universal Ctags with PM-specific fallbacks.
+pm_install_ctags() {
+  case "$1" in
+    dnf)     sudo dnf install -y universal-ctags;;
+    apt-get) sudo apt-get update -y || true
+             sudo apt-get install -y universal-ctags \
+               || sudo apt-get install -y exuberant-ctags;;
+    pacman)  sudo pacman -Sy --noconfirm universal-ctags \
+               || sudo pacman -Sy --noconfirm ctags;;
+    brew)    brew install universal-ctags;;
+    *)       return 1;;
+  esac
+}
+
 detect_pm_and_install_base() {
   $NO_INSTALL && { log "Skipping base package install (--no-install)."; return; }
 
@@ -60,22 +96,13 @@ detect_pm_and_install_base() {
 
   ((${#need[@]}==0)) && { log "All required base tools already installed."; return; }
 
-  if have dnf; then
-    log "Installing with dnf: ${need[*]}"
-    sudo dnf install -y "${need[@]}"
-  elif have apt-get; then
-    log "Installing with apt-get: ${need[*]}"
-    sudo apt-get update -y
-    sudo apt-get install -y "${need[@]}"
-  elif have pacman; then
-    log "Installing with pacman: ${need[*]}"
-    sudo pacman -Sy --noconfirm "${need[@]}"
-  elif have brew; then
-    log "Installing with Homebrew: ${need[*]}"
-    brew install "${need[@]}"
-  else
+  local pm
+  if ! pm="$(detect_pm)"; then
     die "No supported package manager found (supported: dnf, apt-get, pacman, brew). Install manually: ${need[*]}"
   fi
+
+  log "Installing with $pm: ${need[*]}"
+  pm_install "$pm" "${need[@]}"
 }
 
 # Install ctags CLI if "ctags" package is selected
@@ -95,40 +122,10 @@ install_ctags_cli_if_requested() {
 
   log "ctags CLI not found. Attempting to install Universal Ctags…"
 
-  if have dnf; then
-    # Fedora/RHEL-based systems
-    if sudo dnf install -y universal-ctags; then
-      log "Installed universal-ctags via dnf."
-      return 0
-    fi
-  elif have apt-get; then
-    # Debian/Ubuntu-based systems (universal-ctags package available in recent years)
-    sudo apt-get update -y || true
-    if sudo apt-get install -y universal-ctags; then
-      log "Installed universal-ctags via apt-get."
-      return 0
-    fi
-    # Fallback (for older environments): exuberant-ctags
-    if sudo apt-get install -y exuberant-ctags; then
-      log "Installed exuberant-ctags via apt-get (fallback)."
-      return 0
-    fi
-  elif have pacman; then
-    # Arch-based systems (community/universal-ctags)
-    if sudo pacman -Sy --noconfirm universal-ctags; then
-      log "Installed universal-ctags via pacman."
-      return 0
-    fi
-    # Fallback: possibility of ctags remaining as is
-    if sudo pacman -Sy --noconfirm ctags; then
-      log "Installed ctags via pacman (fallback)."
-      return 0
-    fi
-  elif have brew; then
-    if brew install universal-ctags; then
-      log "Installed universal-ctags via Homebrew."
-      return 0
-    fi
+  local pm
+  if pm="$(detect_pm)" && pm_install_ctags "$pm"; then
+    log "Installed ctags via $pm."
+    return 0
   fi
 
   err "Failed to install ctags automatically."
