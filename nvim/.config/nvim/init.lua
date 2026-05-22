@@ -11,15 +11,15 @@ vim.opt.showmatch = true
 vim.opt.matchtime = 1
 
 -- Show invisible characters
- vim.opt.list = true
- vim.opt.listchars = {
+vim.opt.list = true
+vim.opt.listchars = {
   tab   = "» ",
   space = "·",
   trail = "×",
 }
- vim.keymap.set("n", "<leader>l", function()
- vim.opt.list = not vim.opt.list:get()
- end, { desc = "Toggle listchars" })
+vim.keymap.set("n", "<leader>l", function()
+  vim.opt.list = not vim.opt.list:get()
+end, { desc = "Toggle listchars" })
 
 -- Highlight CR at end of line when fileformat is unix
 vim.api.nvim_create_autocmd({ "BufWinEnter", "InsertLeave" }, {
@@ -40,6 +40,10 @@ vim.cmd('filetype plugin indent on') -- Enable file type detection, plugins, and
 vim.cmd('syntax on')                -- Enable syntax highlighting
 vim.opt.title = true                -- Display filename in terminal title bar
 
+-- Search for tags files up to the parent directory
+vim.opt.tags = "./tags;,tags"
+
+-- Gutentags enable-predicate (referenced by vim.g.gutentags_init_user_func)
 _G.dotfiles_gutentags_enabled = function(file_path)
   local absolute_path = vim.fn.fnamemodify(file_path, ':p')
   if absolute_path == '' then
@@ -74,246 +78,24 @@ function! DotfilesGutentagsEnabled(file_path) abort
 endfunction
 ]])
 
-local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
+local lazypath = vim.fn.stdpath('data') .. '/lazy/lazy.nvim'
 if not vim.loop.fs_stat(lazypath) then
   vim.fn.system {
     'git',
     'clone',
     '--filter=blob:none',
     'https://github.com/folke/lazy.nvim.git',
-    '--branch=stable', -- latest stable release
+    '--branch=stable',
     lazypath,
   }
 end
 vim.opt.rtp:prepend(lazypath)
 
--- Plugin setup (fixed balanced braces)
 require('lazy').setup({
-  { 'lervag/vimtex' },
-  { 'nvim-tree/nvim-web-devicons' },
-  { 'github/copilot.vim' },
-  { 'h-hg/fcitx.nvim' },
-  {
-    "nogunix/vim-lsdyna",
-    event = { "BufReadPre *.k", "BufReadPre *.key", "BufNewFile *.k", "BufNewFile *.key" },
-  },
-  {
-    "nvim-treesitter/nvim-treesitter",
-    build = ":TSUpdate",
-    config = function()
-      require("nvim-treesitter").setup({
-        ensure_installed = { "c", "lua", "vim", "vimdoc", "query" },
-        highlight = {
-          enable = true,
-        },
-      })
-    end,
-  },
-  {
-    'hrsh7th/nvim-cmp',
-    dependencies = {
-      'hrsh7th/cmp-nvim-lsp',
-      'hrsh7th/cmp-buffer',
-      'L3MON4D3/LuaSnip',
-      'saadparwaiz1/cmp_luasnip',
-    },
-    config = function()
-      local cmp = require('cmp')
-      local luasnip = require('luasnip')
+  { import = 'plugins' },
+})
 
-      cmp.setup({
-        snippet = {
-          expand = function(args)
-            luasnip.lsp_expand(args.body)
-          end,
-        },
-        mapping = cmp.mapping.preset.insert({
-          ['<C-b>'] = cmp.mapping.scroll_docs(-4),
-          ['<C-f>'] = cmp.mapping.scroll_docs(4),
-          ['<C-Space>'] = cmp.mapping.complete(),
-          ['<C-e>'] = cmp.mapping.abort(),
-          ['<CR>'] = cmp.mapping.confirm({ select = true }),
-        }),
-        sources = cmp.config.sources({
-          { name = 'nvim_lsp' },
-          { name = 'luasnip' },
-        }, { { name = 'buffer' } })
-      })
-    end,
-  },
-
-  -- Theme
-  {
-    "folke/tokyonight.nvim",
-    lazy = false,
-    priority = 1000,
-    opts = {},
-    config = function()
-      vim.cmd.colorscheme 'tokyonight'
-    end,
-  },
-
-  -- LSP and Mason
-  {
-    'williamboman/mason.nvim',
-    dependencies = {
-      "williamboman/mason-lspconfig.nvim",
-      "neovim/nvim-lspconfig",
-      "nvim-lua/plenary.nvim",
-    },
-    event = "VeryLazy",
-    config = function()
-      require("mason").setup {}
-      local mason_lspconfig = require("mason-lspconfig")
-      local on_attach = function(_, bufnr)
-        vim.api.nvim_buf_set_option(bufnr, "formatexpr",
-          "v:lua.vim.lsp.formatexpr(#{timeout_ms:250})")
-      end
-
-      mason_lspconfig.setup({
-        ensure_installed = { "lua_ls" },
-      })
-
-      local lua_settings = {
-        settings = {
-          Lua = {
-            runtime = { version = 'LuaJIT' },
-            diagnostics = { globals = { 'vim' } },
-            workspace = {
-              library = vim.api.nvim_get_runtime_file('', true),
-              checkThirdParty = false,
-            },
-            telemetry = { enable = false },
-          },
-        },
-      }
-      local server_settings = {
-        lua_ls = lua_settings,
-        sumneko_lua = lua_settings,
-        omnisharp = { useGlobalMono = "always" },
-      }
-
-      for _, server_name in ipairs(mason_lspconfig.get_installed_servers()) do
-        local opts = { on_attach = on_attach }
-        if server_settings[server_name] then
-          opts = vim.tbl_deep_extend("force", opts, server_settings[server_name])
-        end
-        -- Use lspconfig's setup; keep this if you substitute with correct call.
-        vim.lsp.config(server_name, opts)
-      end
-    end,
-  },
-
-  -- lualine (external plugin spec returned by require)
-  require('plugins.lualine'),
-
-  -- Markdown Preview
-  -- {
-  --   "iamcco/markdown-preview.nvim",
-  --   cmd = { "MarkdownPreviewToggle", "MarkdownPreview", "MarkdownPreviewStop" },
-  --   build = "cd app && yarn install",
-  --   init = function()
-  --     vim.g.mkdp_filetypes = { "markdown" }
-  --   end,
-  --   ft = { "markdown" },
-  -- },
-
-  -- Telescope
-  {
-    'nvim-telescope/telescope.nvim',
-    dependencies = { 'nvim-lua/plenary.nvim' },
-    cmd = 'Telescope',
-    config = function()
-      local telescope = require('telescope')
-      telescope.setup({
-        defaults = {
-          layout_strategy = 'horizontal',
-          mappings = {
-            i = { ['<C-h>'] = 'which_key' },
-          },
-        },
-        pickers = {
-          lsp_references = { fname_width = 80 },
-          lsp_definitions = { fname_width = 80 },
-          lsp_implementations = { fname_width = 80 },
-          lsp_type_definitions = { fname_width = 80 },
-        },
-      })
-    end,
-  },
-
-  -- Telescope fzf native
-  {
-    'nvim-telescope/telescope-fzf-native.nvim',
-    build = 'make',
-    cond = function() return vim.fn.executable('make') == 1 end,
-    config = function()
-      pcall(require('telescope').load_extension, 'fzf')
-    end,
-  },
-
-  -- Gutentags
-  {
-    'ludovicchabant/vim-gutentags',
-    init = function()
-      local homebrew_ctags = '/opt/homebrew/bin/ctags'
-
-      vim.g.gutentags_add_default_project_roots = 0
-      vim.g.gutentags_add_ctrlp_root_markers = 0
-      vim.g.gutentags_generate_on_missing = 0
-      vim.g.gutentags_init_user_func = 'DotfilesGutentagsEnabled'
-      vim.g.gutentags_project_root = { '.git' }
-      if vim.fn.has('macunix') == 1 and vim.fn.executable(homebrew_ctags) == 1 then
-        vim.g.gutentags_ctags_executable = homebrew_ctags
-      elseif vim.fn.has('unix') == 1 then
-        vim.g.gutentags_ctags_executable = 'ctags'
-      end
-      vim.g.gutentags_ctags_extra_args = {
-        '--fields=+l', '--extras=+q', '--kinds-C=+p', '--kinds-c++=+p',
-        '--exclude=.git', '--exclude=node_modules', '--exclude=build', '--exclude=dist',
-      }
-      vim.g.gutentags_cache_dir = vim.fn.stdpath('cache') .. '/tags'
-    end,
-  },
-
-  -- indent-blankline.nvim
-  {
-    "lukas-reineke/indent-blankline.nvim",
-    main = "ibl",
-    opts = {
-      indent = { char = "│" },
-      whitespace = { remove_blankline_trail = false },
-    },
-  },
-})  -- close require('lazy').setup({
-
--- Viewer options: One may configure the viewer either by specifying a built-in
--- viewer method:
-vim.g.vimtex_view_method = 'zathura'
-
--- Or with a generic interface:
-vim.g.vimtex_view_general_viewer = 'evince'
-vim.g.vimtex_view_general_options = {
-  unique = true,
-  file = '@pdf',
-  src = '@line@tex'
-}
-
--- VimTeX uses latexmk as the default compiler backend. If you use it, which is
--- strongly recommended, you probably don't need to configure anything. If you
--- want another compiler backend, you can change it as follows. The list of
--- supported backends and further explanation is provided in the documentation,
--- see ":help vimtex-compiler".
-vim.g.vimtex_compiler_method = 'latexmk'
-
--- Most VimTeX mappings rely on localleader and this can be changed with the
--- following line. The default is usually fine and is the symbol "\".
--- vim.cmd('let maplocalleader = ", "')
---
--- Search for tags files up to the parent directory
-vim.opt.tags = "./tags;,tags"
-
--- Telescope keymaps that are less likely to conflict with existing keybindings
+-- Telescope keymaps (kept at top level so they bind without :Telescope first)
 local tb = require('telescope.builtin')
 
 -- LSP (selection with preview via Telescope)
