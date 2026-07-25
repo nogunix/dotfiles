@@ -32,20 +32,20 @@ TMUX_POWERLINE_SEPARATOR_LEFT_THIN=""    # U+E0B3
 TMUX_POWERLINE_SEPARATOR_RIGHT_BOLD=""   # U+E0B0
 TMUX_POWERLINE_SEPARATOR_RIGHT_THIN=""   # U+E0B1
 
-# Match the git branch symbol to the chip's light text. The segment hardcodes a
-# `colour<N>` (256-palette) prefix, so use the nearest index to #c0caf5.
+# Match the git branch symbol to the gray chip's light text. The segment
+# hardcodes a `colour<N>` (256-palette) prefix, so use the nearest index to #c0caf5.
 export TMUX_POWERLINE_SEG_VCS_BRANCH_GIT_SYMBOL_COLOUR="189"   # #d7d7ff, ~ #c0caf5
 
-# --- Left: connected chip ribbon — OS (gray) | session (blue) | branch (gray) -
-# All three are filled chips so they read as one unit; two colors only.
+# --- Left: OS (blue) | session (gray) ----------------------------------------
 TMUX_POWERLINE_LEFT_STATUS_SEGMENTS=(
-	"os_icon $tn_gray $tn_fg"
-	"session_label $tn_blue $tn_bar"
-	"vcs_branch $tn_gray $tn_fg"
+	"os_icon $tn_blue $tn_bar"
+	"session_label $tn_gray $tn_fg"
 )
 
-# --- Right: pane current path, blue chip --------------------------------------
+# --- Right: git branch (gray) | pane current path (blue) ----------------------
+# Mirrors the left (outer = blue, inner = gray). branch shows only in a repo.
 TMUX_POWERLINE_RIGHT_STATUS_SEGMENTS=(
+	"vcs_branch $tn_gray $tn_fg"
 	"pane_path $tn_blue $tn_bar"
 )
 
