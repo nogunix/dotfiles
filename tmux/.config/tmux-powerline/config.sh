@@ -36,10 +36,10 @@ TMUX_POWERLINE_SEPARATOR_RIGHT_THIN=""   # U+E0B1
 # hardcodes a `colour<N>` (256-palette) prefix, so use the nearest index to #c0caf5.
 export TMUX_POWERLINE_SEG_VCS_BRANCH_GIT_SYMBOL_COLOUR="189"   # #d7d7ff, ~ #c0caf5
 
-# --- Left: OS (blue) | session (gray) ----------------------------------------
+# --- Left: session (blue) | OS (gray) ----------------------------------------
 TMUX_POWERLINE_LEFT_STATUS_SEGMENTS=(
-	"os_icon $tn_blue $tn_bar"
-	"session_label $tn_gray $tn_fg"
+	"session_label $tn_blue $tn_bar"
+	"os_icon $tn_gray $tn_fg"
 )
 
 # --- Right: git branch (gray) | pane current path (blue) ----------------------
