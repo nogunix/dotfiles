@@ -1,4 +1,5 @@
 # shellcheck shell=bash
+# shellcheck disable=SC2034  # vars/arrays here are consumed by tmux-powerline
 # tmux-powerline configuration — reproduces the original hand-written status bar.
 #
 # Sourced BEFORE the built-in theme (which only assigns unset values), so

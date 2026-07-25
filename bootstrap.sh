@@ -270,7 +270,11 @@ if [[ " ${STOW_PKGS[*]} " == *" zsh "* && $UNSTOW == false ]]; then
 fi
 
 if [[ " ${STOW_PKGS[*]} " == *" tmux "* && $UNSTOW == false ]]; then
-  $NO_INSTALL && log "Skipping TPM install (--no-install)." || install_tpm
+  if $NO_INSTALL; then
+    log "Skipping TPM install (--no-install)."
+  else
+    install_tpm
+  fi
 fi
 
 log "Done."
