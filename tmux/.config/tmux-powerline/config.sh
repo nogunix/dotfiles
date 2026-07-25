@@ -36,7 +36,7 @@ TMUX_POWERLINE_SEPARATOR_RIGHT_THIN=""   # U+E0B1
 # hardcodes a `colour<N>` (256-palette) prefix, so use the nearest index to #c0caf5.
 export TMUX_POWERLINE_SEG_VCS_BRANCH_GIT_SYMBOL_COLOUR="189"   # #d7d7ff, ~ #c0caf5
 
-# --- Left: session (blue) | OS (gray) ----------------------------------------
+# --- Left: session (blue) | kernel (gray) ------------------------------------
 TMUX_POWERLINE_LEFT_STATUS_SEGMENTS=(
 	"session_label $tn_blue $tn_bar"
 	"os_icon $tn_gray $tn_fg"
