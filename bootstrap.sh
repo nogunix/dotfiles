@@ -198,6 +198,29 @@ install_zinit() {
   fi
 }
 
+# Install TPM (tmux plugin manager) and the plugins declared in tmux.conf.
+# Plugins live under the data dir (matches TMUX_PLUGIN_MANAGER_PATH in tmux.conf)
+# so they stay out of the stow-managed ~/.config/tmux directory.
+install_tpm() {
+  local tpm_home="${XDG_DATA_HOME:-$HOME/.local/share}/tmux/plugins/tpm"
+  if [[ -d "$tpm_home" ]]; then
+    log "TPM already installed at $tpm_home"
+  else
+    log "Installing TPM (tmux plugin manager)..."
+    git clone --depth 1 https://github.com/tmux-plugins/tpm "$tpm_home"
+  fi
+
+  # Install/refresh the declared plugins non-interactively.
+  if have tmux; then
+    log "Installing tmux plugins via TPM..."
+    export TMUX_PLUGIN_MANAGER_PATH="${XDG_DATA_HOME:-$HOME/.local/share}/tmux/plugins/"
+    "$tpm_home/bin/install_plugins" \
+      || err "TPM plugin install failed; run '<prefix> + I' inside tmux to retry."
+  else
+    log "tmux not found; skipping plugin install (run '<prefix> + I' after installing tmux)."
+  fi
+}
+
 # --- Parse args ---
 while (( "$#" )); do
   case "${1:-}" in
@@ -244,6 +267,10 @@ run_stow
 # Post steps
 if [[ " ${STOW_PKGS[*]} " == *" zsh "* && $UNSTOW == false ]]; then
   install_zinit
+fi
+
+if [[ " ${STOW_PKGS[*]} " == *" tmux "* && $UNSTOW == false ]]; then
+  $NO_INSTALL && log "Skipping TPM install (--no-install)." || install_tpm
 fi
 
 log "Done."
