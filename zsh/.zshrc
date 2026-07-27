@@ -47,7 +47,20 @@ fpath=("${_existing_fpath[@]}")
 
 unset _existing_fpath _fpath_dir _completion_link _has_broken_completion
 
-autoload -Uz compinit; compinit
+# compinit is invoked from zinit's Turbo block below, once every plugin has been
+# added to fpath -- running it here would miss zsh-completions entirely.
+# The full security audit is done at most once a day; -C reuses the dump otherwise.
+_zsh_compinit() {
+  autoload -Uz compinit
+  local dump=${ZDOTDIR:-$HOME}/.zcompdump
+  if [[ -n ${dump}(#qN.mh+24) ]]; then
+    compinit -d "$dump"
+    { zcompile -R -- "$dump" } &!
+  else
+    compinit -C -d "$dump"
+  fi
+}
+
 autoload -Uz colors; colors
 
 # Enable menu selection with Tab
@@ -107,8 +120,14 @@ zinit light-mode for \
     zdharma-continuum/zinit-annex-rust
 
 # --- Plugins ---
-zinit light zsh-users/zsh-completions
-zinit light zsh-users/zsh-autosuggestions
+# Turbo mode: these load just after the first prompt is drawn rather than
+# blocking it. zinit walks the list one plugin per prompt, so autosuggestions
+# becomes active from the second prompt onwards.
+zinit wait lucid light-mode for \
+    atinit'_zsh_compinit; zicdreplay' \
+        zsh-users/zsh-completions \
+    atload'_zsh_autosuggest_start' \
+        zsh-users/zsh-autosuggestions
 
 # zoxide (replaces rupa/z). Fetched as a prebuilt binary from GitHub releases,
 # so no package manager is needed on either macOS or Linux.
