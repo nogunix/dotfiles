@@ -106,8 +106,19 @@ zinit light-mode for \
 # --- Plugins ---
 zinit light zsh-users/zsh-completions
 zinit light zsh-users/zsh-autosuggestions
-zinit light rupa/z
+
+# zoxide (replaces rupa/z). Fetched as a prebuilt binary from GitHub releases,
+# so no package manager is needed on either macOS or Linux.
+zinit ice from"gh-r" as"command" pick"zoxide"
+zinit light ajeetdsouza/zoxide
 ### End of Zinit's installer chunk
+
+#==============================================================================
+# zoxide (smarter cd: `z <query>` to jump, `zi` for an interactive pick)
+#==============================================================================
+if command -v zoxide >/dev/null 2>&1; then
+  eval "$(zoxide init zsh)"
+fi
 
 #==============================================================================
 # Aliases & Exports
