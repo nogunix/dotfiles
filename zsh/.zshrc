@@ -211,3 +211,7 @@ zinit light-mode for \
     zdharma-continuum/zinit-annex-rust
 
 ### End of Zinit's installer chunk
+
+
+# Added by Antigravity CLI installer
+export PATH="/home/mnoguchi/.local/bin:$PATH"
