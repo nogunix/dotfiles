@@ -1,7 +1,10 @@
 #==============================================================================
 # Compile .zshrc only if it has been updated, to speed up Zsh startup
 #==============================================================================
-if [[ -f ~/.zshrc && ~/.zshrc -nt ~/.zshrc.zwc ]]; then
+# NOTE: zsh's -nt is false when the right-hand file is missing (bash returns
+# true), so testing only `.zshrc -nt .zshrc.zwc` never fires on a machine that
+# has no .zwc yet -- the guard would wait for the file it is supposed to create.
+if [[ -f ~/.zshrc && ( ! -f ~/.zshrc.zwc || ~/.zshrc -nt ~/.zshrc.zwc ) ]]; then
   zcompile ~/.zshrc
 fi
 
