@@ -201,7 +201,3 @@ alias vim='nvim'
 if [[ -f ~/.zshrc.local ]]; then
   source ~/.zshrc.local
 fi
-
-
-# Added by Antigravity CLI installer
-export PATH="/home/mnoguchi/.local/bin:$PATH"
