@@ -26,33 +26,46 @@ setopt hist_expire_dups_first   # Remove duplicates first when trimming history
 # Completion
 #==============================================================================
 typeset -U fpath
-typeset -a _existing_fpath
-typeset _fpath_dir _completion_link
-integer _has_broken_completion
 
-for _fpath_dir in "${fpath[@]}"; do
-  [[ -d "$_fpath_dir" ]] || continue
+# zinit keeps one symlink per installed completion under its completions/ dir.
+# When a plugin update drops a file upstream the symlink stays behind pointing at
+# nothing, and compinit fails on it:
+#   compinit:527: no such file or directory: .../zinit/completions/_sdd
+# Delete those links -- a dangling _* symlink can only ever produce that error.
+# Dropping the whole fpath entry instead would cost every completion the
+# directory provides (~1000 files for zsh-completions) to silence one warning.
+# Only writable directories are touched, so root-owned site-functions are left
+# alone. Returns true when something was removed.
+_zsh_prune_broken_completions() {
+  local dir
+  local -a broken
+  integer pruned=0
 
-  _has_broken_completion=0
-  for _completion_link in "$_fpath_dir"/_*(N); do
-    if [[ -L "$_completion_link" && ! -e "$_completion_link" ]]; then
-      _has_broken_completion=1
-      break
-    fi
+  for dir in "${fpath[@]}"; do
+    [[ -d $dir && -w $dir ]] || continue
+    # (-@) resolves the link and still matches @ only when the target is gone.
+    broken=( $dir/_*(N-@) )
+    (( $#broken )) || continue
+    command rm -f -- "${broken[@]}" && pruned=1
   done
 
-  (( _has_broken_completion == 0 )) && _existing_fpath+=("$_fpath_dir")
-done
-fpath=("${_existing_fpath[@]}")
-
-unset _existing_fpath _fpath_dir _completion_link _has_broken_completion
+  (( pruned ))
+}
 
 # compinit is invoked from zinit's Turbo block below, once every plugin has been
-# added to fpath -- running it here would miss zsh-completions entirely.
+# added to fpath -- running it here would miss zsh-completions entirely. The
+# prune has to wait for the same reason: zinit's completions dir only joins
+# fpath when zinit is sourced, long after this point in the file.
 # The full security audit is done at most once a day; -C reuses the dump otherwise.
 _zsh_compinit() {
   autoload -Uz compinit
   local dump=${ZDOTDIR:-$HOME}/.zcompdump
+
+  # A dump written before the prune still maps the completion we just removed.
+  if _zsh_prune_broken_completions; then
+    command rm -f -- "$dump" "$dump.zwc"
+  fi
+
   if [[ -n ${dump}(#qN.mh+24) ]]; then
     compinit -d "$dump"
     { zcompile -R -- "$dump" } &!
