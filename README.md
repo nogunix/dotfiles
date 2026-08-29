@@ -184,5 +184,3 @@ tests/nvim-headless.sh --health
 ## License
 
 This repository is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
-This is my personal project. It is created and maintained in my personal capacity, and has no relation to my employer's business or confidential information.
