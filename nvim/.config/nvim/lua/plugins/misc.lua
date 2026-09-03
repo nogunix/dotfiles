@@ -1,6 +1,5 @@
 return {
   { 'nvim-tree/nvim-web-devicons' },
-  { 'github/copilot.vim' },
   { 'h-hg/fcitx.nvim' },
   {
     'nogunix/vim-lsdyna',
