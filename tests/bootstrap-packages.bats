@@ -212,6 +212,24 @@ STUB
   [[ "$(pm_log)" == *"zdharma-continuum/zinit"* ]]
 }
 
+@test "skips zinit under --no-install" {
+  # --no-install has to mean no network at all. install_zinit used to run
+  # regardless, so `--no-install` still curled the installer from GitHub.
+  cat >"$BIN/curl" <<'STUB'
+#!/bin/bash
+printf 'curl %s\n' "$*" >>"$PM_LOG"
+printf ':\n'
+STUB
+  chmod +x "$BIN/curl"
+
+  bootstrap -p "zsh" --no-install
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Skipping Zinit install (--no-install)"* ]]
+  [[ "$output" != *"Installing Zinit"* ]]
+  [ ! -e "$PM_LOG" ] || [[ "$(pm_log)" != *"curl"* ]]
+  [ ! -d "$HOME/.local/share/zinit/zinit.git" ]
+}
+
 @test "leaves an existing zinit checkout in place" {
   stub dnf
   stub curl

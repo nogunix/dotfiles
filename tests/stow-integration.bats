@@ -20,8 +20,9 @@ setup() {
   # output would never match otherwise.
   TEST_TMP="$(cd -- "$(mktemp -d "${TMPDIR:-/tmp}/stow-int.XXXXXX")" && pwd -P)"
 
-  # Minimal standalone copy: bootstrap.sh plus the one inert stow package.
-  # "zsh" would fetch zinit and "tmux" would fetch TPM, so neither belongs here.
+  # Minimal standalone copy: bootstrap.sh plus one stow package. ctags is
+  # enough to exercise linking, folding, backup and unstow, and keeping the
+  # copy small keeps each test cheap.
   REPO_ROOT="$TEST_TMP/repo"
   mkdir -p "$REPO_ROOT"
   cp "$SRC_ROOT/bootstrap.sh" "$REPO_ROOT/"

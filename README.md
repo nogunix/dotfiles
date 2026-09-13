@@ -68,7 +68,7 @@ using `dnf`, `apt-get`, `pacman`, or Homebrew.
 | `-n`             | Dry run (show what would happen) |
 | `-u "pkg1 pkg2"` | Unstow only the listed packages (implies `-U`) |
 | `-U`             | Unstow (remove symlinks) |
-| `--no-install`   | Skip installing base dependencies and ctags |
+| `--no-install`   | Skip every install step: base packages, ctags, Zinit, TPM |
 | `-h`, `--help`   | Show help message |
 
 ### Examples

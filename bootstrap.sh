@@ -32,7 +32,7 @@ Options:
   -n              Dry-run (show what would happen)
   -u "pkg1 pkg2"  Unstow only the specified packages (implies -U)
   -U              Unstow (remove symlinks) instead of stowing
-  --no-install    Skip package installation (git/stow/neovim/tmux/zsh/curl/ctags)
+  --no-install    Skip every install step: base packages, ctags, Zinit, TPM
   -h, --help      Show this help
 
 Examples:
@@ -274,7 +274,11 @@ run_stow
 
 # Post steps
 if [[ " ${STOW_PKGS[*]} " == *" zsh "* && $UNSTOW == false ]]; then
-  install_zinit
+  if $NO_INSTALL; then
+    log "Skipping Zinit install (--no-install)."
+  else
+    install_zinit
+  fi
 fi
 
 if [[ " ${STOW_PKGS[*]} " == *" tmux "* && $UNSTOW == false ]]; then
