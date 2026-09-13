@@ -7,7 +7,7 @@ DEFAULT_STOW_PKGS=("zsh" "nvim" "tmux" "ctags")
 
 # --- Globals ---
 SCRIPT_PATH="${BASH_SOURCE[0]}"
-SCRIPT_DIR="$(cd -- "${SCRIPT_PATH%/*}" && pwd)"
+SCRIPT_DIR="$(cd -- "${SCRIPT_PATH%/*}" && pwd -P)"
 REPO_ROOT="$SCRIPT_DIR"
 TARGET_DIR="$HOME"
 ADOPT=false
@@ -133,10 +133,18 @@ install_ctags_cli_if_requested() {
   return 1
 }
 
-# back up a path if it exists and is NOT a symlink into this repo
+# back up a path if it exists and does not already resolve into this repo
 backup_if_conflict() {
   local path="$1"
   if [[ -e "$path" || -L "$path" ]]; then
+    # Once a package is stowed, stow may have folded a whole directory into a
+    # single symlink back here. The entries under it are then the repo's own
+    # files, and moving one would rename a tracked file out from under git, so
+    # resolve the parent physically and bail out when we land inside the repo.
+    local parent
+    if parent="$(cd -- "${path%/*}" 2>/dev/null && pwd -P)"; then
+      [[ "$parent" == "$REPO_ROOT" || "$parent" == "$REPO_ROOT"/* ]] && return 0
+    fi
     if [[ -L "$path" ]]; then
       local target
       target="$(readlink -f -- "$path" || true)"
@@ -170,7 +178,7 @@ validate_selected_packages() {
 }
 
 run_stow() {
-  local stow_args=(-v -t "$TARGET_DIR")
+  local stow_args=(-d "$REPO_ROOT" -v -t "$TARGET_DIR")
   $DRY_RUN && stow_args=(-n "${stow_args[@]}")
 
   if $UNSTOW; then
