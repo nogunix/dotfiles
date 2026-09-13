@@ -1,0 +1,24 @@
+# Coverage here is a signal, not a gate.
+#
+# A large part of bootstrap.sh only runs against a real package manager
+# (dnf/apt-get/pacman/brew installing real packages), and the clipboard
+# wrappers have branches that need a Wayland, X11 or macOS session to reach.
+# Failing a pull request on a coverage delta would mostly punish honest tests,
+# so both statuses are informational.
+
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+
+# The suite measures the shipped scripts, not itself.
+ignore:
+  - "tests/**"
+
+comment:
+  layout: "reach, diff, files"
+  require_changes: true

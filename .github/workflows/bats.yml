@@ -109,6 +109,35 @@ jobs:
           MATRIX_LABEL: macos-latest (${{ matrix.bash }} bash)
         run: tests/run.sh
 
+  # Coverage for shell needs kcov, which Ubuntu dropped after 22.04 but Fedora
+  # still ships. kcov follows forks, so bootstrap.sh and the clipboard wrappers
+  # are measured even though the tests execute them as subprocesses.
+  coverage:
+    name: coverage (fedora-latest)
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install dependencies
+        run: |
+          dnf -y install --setopt=install_weak_deps=False \
+            kcov bats git stow zsh tmux neovim \
+            xclip xsel xorg-x11-server-Xvfb \
+            procps-ng findutils diffutils
+
+      - uses: actions/checkout@v4
+
+      - name: Run the suite under kcov
+        timeout-minutes: 15
+        run: xvfb-run -a tests/coverage.sh
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/cobertura.xml
+          # A Codecov outage should not turn a passing test suite red.
+          fail_ci_if_error: false
+
   # Real plugin bootstrap: clones every lazy.nvim plugin and loads them
   # headlessly. Kept separate because it is the only job that depends on
   # upstream plugin repositories staying healthy.

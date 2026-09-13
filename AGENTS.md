@@ -17,7 +17,8 @@ Treat it as an operational repo, not just a collection of config files.
 - `nvim/.config/nvim/`: Neovim configuration (Lazy.nvim based).
 - `tmux/.config/tmux/tmux.conf`: tmux behavior and clipboard integration.
 - `tests/`: Bats coverage for bootstrap, stow, clipboard, tmux and config
-  portability, plus `run.sh` (suite + skip report) and `lint.sh` (shellcheck).
+  portability, plus `run.sh` (suite + skip report), `lint.sh` (shellcheck) and
+  `coverage.sh` (kcov).
 
 ## Change Rules
 
@@ -77,6 +78,9 @@ bats tests/tmux-config.bats
 # Lint every shell script, including the extensionless wrappers
 tests/lint.sh
 
+# Coverage (needs kcov; Fedora packages it, Ubuntu no longer does)
+tests/coverage.sh
+
 # Verify Neovim config and plugin startup headlessly
 tests/nvim-headless.sh
 
@@ -95,7 +99,10 @@ prints the skip list; `tests/run.sh --strict` turns any skip into a failure.
 and fedora-rawhide (container jobs — GitHub has no Fedora runner), and twice on
 macos-latest: once with the system bash 3.2 and once with Homebrew bash first on
 `PATH`. `.github/workflows/shellcheck.yml` runs `tests/lint.sh` on Ubuntu and
-Fedora.
+Fedora. A `coverage` job runs the suite under kcov in a Fedora container and
+uploads the Cobertura report to Codecov; `codecov.yml` keeps both statuses
+informational, since much of `bootstrap.sh` only runs against a real package
+manager.
 
 Two consequences worth remembering when writing tests:
 

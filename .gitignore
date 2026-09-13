@@ -10,3 +10,6 @@ zsh/.config/zsh/*.local
 nvim/.config/nvim/lazy-lock.json
 nvim/.config/nvim/lua/plugins/gemini.lua
 
+
+# kcov output
+coverage/

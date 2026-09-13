@@ -3,6 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tests](https://github.com/nogunix/dotfiles/actions/workflows/bats.yml/badge.svg?branch=main)](https://github.com/nogunix/dotfiles/actions/workflows/bats.yml)
 [![Lint](https://github.com/nogunix/dotfiles/actions/workflows/shellcheck.yml/badge.svg?branch=main)](https://github.com/nogunix/dotfiles/actions/workflows/shellcheck.yml)
+[![codecov](https://codecov.io/gh/nogunix/dotfiles/branch/main/graph/badge.svg)](https://codecov.io/gh/nogunix/dotfiles)
 
 
 A personal dotfiles repository managed with [GNU Stow](https://www.gnu.org/software/stow/).
@@ -99,6 +100,7 @@ using `dnf`, `apt-get`, `pacman`, or Homebrew.
 tests/run.sh          # the whole Bats suite, with a summary of what skipped
 tests/lint.sh         # shellcheck every shell script, incl. the extensionless ones
 tests/run.sh --strict # additionally fail if any test skipped
+tests/coverage.sh     # the suite under kcov, with a per-file coverage report
 tests/nvim-headless.sh  # install/load the Neovim plugins headlessly
 ```
 
@@ -116,9 +118,16 @@ CI runs it on:
 | `macos-latest` (system bash) | the BSD userland and the bash 3.2 that ships with macOS |
 | `macos-latest` (Homebrew bash) | the same host with bash 5 first on `PATH` |
 | `nvim plugins` (Linux + macOS) | a real lazy.nvim bootstrap and headless load |
+| `coverage` (Fedora) | the suite under kcov, uploaded to Codecov |
 
 Linting runs on Ubuntu and Fedora, because the two ship different shellcheck
 versions.
+
+Coverage measures the shipped scripts, not the tests. kcov follows forks, so
+`bootstrap.sh` and the clipboard wrappers are counted even though the suite
+runs them as subprocesses. It is reported as a signal, never as a gate: a good
+deal of `bootstrap.sh` only runs against a real package manager, and several
+clipboard branches need a Wayland, X11 or macOS session to reach.
 
 ## Remote Clipboard over SSH
 
