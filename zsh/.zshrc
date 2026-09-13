@@ -74,8 +74,6 @@ _zsh_compinit() {
   fi
 }
 
-autoload -Uz colors; colors
-
 # Enable menu selection with Tab
 zstyle ':completion:*:default' menu select=2
 # Case-insensitive completion
@@ -125,13 +123,6 @@ source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
 autoload -Uz _zinit
 (( ${+_comps} )) && _comps[zinit]=_zinit
 
-# Load important annexes (without Turbo)
-zinit light-mode for \
-    zdharma-continuum/zinit-annex-as-monitor \
-    zdharma-continuum/zinit-annex-bin-gem-node \
-    zdharma-continuum/zinit-annex-patch-dl \
-    zdharma-continuum/zinit-annex-rust
-
 # --- Plugins ---
 # Turbo mode: these load just after the first prompt is drawn rather than
 # blocking it. zinit walks the list one plugin per prompt, so autosuggestions
@@ -152,7 +143,21 @@ zinit light ajeetdsouza/zoxide
 # zoxide (smarter cd: `z <query>` to jump, `zi` for an interactive pick)
 #==============================================================================
 if command -v zoxide >/dev/null 2>&1; then
-  eval "$(zoxide init zsh)"
+  # `zoxide init` costs a subprocess on every startup, so cache its output and
+  # regenerate only when the binary itself is newer. As with .zshrc.zwc above,
+  # zsh's -nt is false when the right-hand file is missing, hence the -f test.
+  _zoxide_init=${XDG_CACHE_HOME:-$HOME/.cache}/zoxide-init.zsh
+  if [[ ! -f $_zoxide_init || $commands[zoxide] -nt $_zoxide_init ]]; then
+    command mkdir -p -- ${_zoxide_init:h} && zoxide init zsh >| $_zoxide_init
+  fi
+  # A failed regeneration leaves the cache empty or absent; fall back to eval so
+  # `z` still works rather than silently losing it.
+  if [[ -s $_zoxide_init ]]; then
+    source $_zoxide_init
+  else
+    eval "$(zoxide init zsh)"
+  fi
+  unset _zoxide_init
 fi
 
 #==============================================================================
