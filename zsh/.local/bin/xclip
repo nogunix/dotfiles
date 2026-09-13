@@ -13,11 +13,11 @@ backend_cmd="${backend#*:}"
 
 while (($# > 0)); do
   case "$1" in
-    -selection)
+    -selection|-sel)
       shift
       selection="${1:-clipboard}"
       ;;
-    -sel|-selection=*)
+    -selection=*|-sel=*)
       selection="${1#*=}"
       ;;
     -i|-in)
