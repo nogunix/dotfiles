@@ -33,6 +33,7 @@ if [[ -n "${TMUX:-}" ]]; then
   printf '%s' "$osc52"
 elif [[ "${TERM:-}" == screen* ]]; then
   # Screen passthrough: \eP\e]52;... \a\e\
+  # shellcheck disable=SC1003  # trailing \\ is a literal backslash (the ST terminator)
   printf '\033P\033%s\033\\' "$osc52"
 else
   printf '%s' "$osc52"

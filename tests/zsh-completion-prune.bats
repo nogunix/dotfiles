@@ -67,6 +67,11 @@ run_prune() {
 }
 
 @test "leaves broken links in non-writable directories alone" {
+  # The guard is zsh's [[ -w $dir ]], which root passes regardless of the mode
+  # bits, so this case cannot be expressed when the suite runs as root (as it
+  # does inside a plain distro container).
+  [ "$(id -u)" -ne 0 ] || skip "running as root: the write bit is not enforced"
+
   ln -s "$TMPDIR/src/_gone" "$FPATH_DIR/_gone"
   chmod u-w "$FPATH_DIR"
 
