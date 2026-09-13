@@ -15,7 +15,10 @@ setup() {
   command -v stow >/dev/null || skip "stow not installed"
 
   SRC_ROOT="$(cd "$BATS_TEST_DIRNAME/.." && pwd -P)"
-  TEST_TMP="$(mktemp -d "${TMPDIR:-/tmp}/stow-int.XXXXXX")"
+  # Resolve the temp dir physically: on macOS $TMPDIR is under /var, which is a
+  # symlink to /private/var, so the paths these tests compare against pwd -P
+  # output would never match otherwise.
+  TEST_TMP="$(cd -- "$(mktemp -d "${TMPDIR:-/tmp}/stow-int.XXXXXX")" && pwd -P)"
 
   # Minimal standalone copy: bootstrap.sh plus the one inert stow package.
   # "zsh" would fetch zinit and "tmux" would fetch TPM, so neither belongs here.
