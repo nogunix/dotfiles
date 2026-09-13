@@ -4,7 +4,12 @@ set -euo pipefail
 mode="input"
 files=()
 self_path="${BASH_SOURCE[0]}"
-self_dir="$(cd -- "${self_path%/*}" && pwd)"
+# ${path%/*} leaves a bare filename untouched, so a slashless invocation
+# (`bash xsel` from this directory) would try to cd into the script.
+case "$self_path" in
+  */*) self_dir="$(cd -- "${self_path%/*}" && pwd)" ;;
+  *)   self_dir="$PWD" ;;
+esac
 
 backend="$("$self_dir/clipboard-backend")"
 backend_name="${backend%%:*}"

@@ -7,7 +7,13 @@ DEFAULT_STOW_PKGS=("zsh" "nvim" "tmux" "ctags")
 
 # --- Globals ---
 SCRIPT_PATH="${BASH_SOURCE[0]}"
-SCRIPT_DIR="$(cd -- "${SCRIPT_PATH%/*}" && pwd -P)"
+# ${path%/*} leaves a bare filename untouched, so `bash bootstrap.sh` would
+# otherwise try to cd into the script itself. Without a slash bash resolved it
+# relative to the cwd, so that is the directory to use.
+case "$SCRIPT_PATH" in
+  */*) SCRIPT_DIR="$(cd -- "${SCRIPT_PATH%/*}" && pwd -P)" ;;
+  *)   SCRIPT_DIR="$(pwd -P)" ;;
+esac
 REPO_ROOT="$SCRIPT_DIR"
 TARGET_DIR="$HOME"
 ADOPT=false

@@ -29,6 +29,25 @@ setup() {
   )
 }
 
+@test "scripts locate themselves when invoked without a path" {
+  # `bash <script>` from the script's own directory leaves BASH_SOURCE without
+  # a slash, which ${path%/*} does not shorten — so a naive `cd "${path%/*}"`
+  # tries to cd into the script itself and the run dies before doing anything.
+  run bash -c "cd '$REPO_ROOT' && bash bootstrap.sh --help"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Usage:"* ]]
+  [[ "$output" != *"Not a directory"* ]]
+
+  local bin="$REPO_ROOT/zsh/.local/bin"
+  for script in clipboard-backend clipboard-copy xclip xsel; do
+    run bash -c "cd '$bin' && printf 'x' | bash $script </dev/null 2>&1"
+    [[ "$output" != *"Not a directory"* ]] || {
+      echo "$script could not find its own directory: $output"
+      false
+    }
+  done
+}
+
 @test "no stowed config bakes in a specific user's home directory" {
   # Stowed files land in a different $HOME on every machine, and /home/... is
   # not even the right prefix on macOS. Only the files that get linked into
