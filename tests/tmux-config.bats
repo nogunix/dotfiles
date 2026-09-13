@@ -61,6 +61,71 @@ run_segment_file() {
   [[ "$output" != *'\u'* ]]
 }
 
+# The segment branches on `uname -s`, so the two branches this host is not
+# running can still be checked by putting a fake uname in front of PATH. That
+# is the only way CI on Linux ever sees the macOS rendering, and vice versa.
+render_segment_as() {
+  local os="$1" release="$2" product="${3:-}"
+  local fake="$TEST_TMP/fake-$os"
+  mkdir -p "$fake"
+
+  cat >"$fake/uname" <<STUB
+#!/bin/bash
+case "\$1" in
+  -s) printf '%s\n' '$os' ;;
+  -r) printf '%s\n' '$release' ;;
+  *)  printf '%s\n' '$os' ;;
+esac
+STUB
+  chmod +x "$fake/uname"
+
+  if [ -n "$product" ]; then
+    cat >"$fake/sw_vers" <<STUB
+#!/bin/bash
+printf '%s\n' '$product'
+STUB
+    chmod +x "$fake/sw_vers"
+  fi
+
+  run env PATH="$fake:$PATH" bash -c \
+    "source '$SEGMENTS/os_icon.sh' && run_segment"
+}
+
+@test "os_icon renders the macOS product version" {
+  render_segment_as Darwin 23.5.0 14.5
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"macOS 14.5"* ]]
+  # The Apple glyph, as raw UTF-8 rather than a printf escape.
+  [[ "$output" == *$''* ]]
+}
+
+@test "os_icon still says macOS when sw_vers gives nothing" {
+  render_segment_as Darwin 23.5.0 ""
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"macOS"* ]]
+  [[ "$output" != *"macOS "* ]]
+}
+
+@test "os_icon strips the distro suffix from a Linux kernel release" {
+  render_segment_as Linux 6.11.3-200.fc40.x86_64
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"6.11.3"* ]]
+  [[ "$output" != *"fc40"* ]]
+  [[ "$output" == *$''* ]]
+}
+
+@test "os_icon falls back to a terminal glyph on other systems" {
+  render_segment_as FreeBSD 14.0-RELEASE
+
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"14.0"* ]]
+  [[ "$output" != *"RELEASE"* ]]
+  [[ "$output" == *$''* ]]
+}
+
 @test "session_label and pane_path emit tmux format placeholders" {
   run_segment_file session_label.sh
   [ "$status" -eq 0 ]

@@ -125,9 +125,12 @@ versions.
 
 Coverage measures the shipped scripts, not the tests. kcov follows forks, so
 `bootstrap.sh` and the clipboard wrappers are counted even though the suite
-runs them as subprocesses. It is reported as a signal, never as a gate: a good
-deal of `bootstrap.sh` only runs against a real package manager, and several
-clipboard branches need a Wayland, X11 or macOS session to reach.
+runs them as subprocesses. It is reported as a signal, never as a gate.
+
+What is left uncovered is deliberate: the `pbcopy` arm of `clipboard-copy`
+needs a real macOS pasteboard (the macOS jobs exercise it, but coverage only
+runs on Fedora), and two `return 1` arms in `bootstrap.sh` are unreachable
+defensive code.
 
 ## Remote Clipboard over SSH
 

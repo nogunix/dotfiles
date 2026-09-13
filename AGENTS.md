@@ -68,10 +68,13 @@ tests/run.sh
 
 # Individual test files if scope is narrow
 bats tests/bootstrap.bats            # bootstrap.sh argv, with stow stubbed
+bats tests/bootstrap-packages.bats   # dnf/apt-get/pacman/brew dispatch, stubbed
 bats tests/stow-integration.bats     # bootstrap.sh against the real stow
-bats tests/clipboard-backend.bats
+bats tests/clipboard-backend.bats    # which backend gets chosen
+bats tests/clipboard-wrappers.bats   # what each wrapper does with it
 bats tests/clipboard-integration.bats
 bats tests/clipboard-macos.bats      # macOS only; skips elsewhere
+bats tests/osc52.bats
 bats tests/config-portability.bats   # zsh -n / bash -n / lua / hardcoded $HOME
 bats tests/tmux-config.bats
 
@@ -110,6 +113,9 @@ Two consequences worth remembering when writing tests:
   enforced must skip when `id -u` is 0.
 - macOS has no `sha256sum`, no GNU `readlink -f` guarantee, and `/bin/bash` is
   3.2 — no `mapfile`, no `printf '\uHHHH'`, no associative arrays.
+- Isolate a subprocess's environment with `env -u NAME ...`, never `env -i`.
+  A cleared environment also drops what kcov uses to trace bash, so the run
+  still passes but contributes nothing to coverage.
 
 ### Tests must not touch the working tree
 

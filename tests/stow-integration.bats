@@ -127,6 +127,29 @@ assert_package_intact() {
   [ "$output" = "universal.ctags" ]
 }
 
+@test "re-stowing over a per-file symlink makes no backup either" {
+  # With a conflict in the way, stow links each file individually instead of
+  # folding the directory. The second run then meets its own symlink, whose
+  # parent is a real directory in $HOME — a different code path from the folded
+  # case above, and the one the readlink check exists for.
+  mkdir -p "$HOME/.ctags.d"
+  printf 'user-managed\n' >"$HOME/.ctags.d/universal.ctags"
+
+  bootstrap -p "ctags"
+  [ "$status" -eq 0 ]
+  [ -L "$STOWED" ]
+
+  bootstrap -p "ctags"
+  [ "$status" -eq 0 ]
+  [ -L "$STOWED" ]
+  assert_stowed "$STOWED"
+  assert_package_intact
+
+  # Exactly one backup, from the first run: the symlink must not be re-backed.
+  run bash -c "ls -A '$HOME'/.ctags.d/ | grep -c '\.bak\.'"
+  [ "$output" -eq 1 ]
+}
+
 @test "works when invoked from an unrelated working directory" {
   # stow defaults its stow dir to the cwd, so bootstrap.sh has to pass -d.
   run env HOME="$HOME" bash -c "cd / && /bin/bash '$REPO_ROOT/bootstrap.sh' --no-install -p ctags"
