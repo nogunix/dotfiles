@@ -93,6 +93,33 @@ using `dnf`, `apt-get`, `pacman`, or Homebrew.
   ./bootstrap.sh -u "tmux"
   ```
 
+## Testing
+
+```bash
+tests/run.sh          # the whole Bats suite, with a summary of what skipped
+tests/lint.sh         # shellcheck every shell script, incl. the extensionless ones
+tests/run.sh --strict # additionally fail if any test skipped
+tests/nvim-headless.sh  # install/load the Neovim plugins headlessly
+```
+
+Most of the suite guards behaviour that only exists when the real tools are
+installed, so `tests/run.sh` prints which tests skipped and why — a job missing
+`zsh`, `nvim`, `tmux`, `stow` or a clipboard otherwise passes while testing
+almost nothing.
+
+CI runs it on:
+
+| Job | What it adds |
+|-----|--------------|
+| `ubuntu-latest` | apt tool versions, X11 clipboard under Xvfb |
+| `fedora-latest` / `fedora-rawhide` | dnf tool versions, in the official container (rawhide is advisory) |
+| `macos-latest` (system bash) | the BSD userland and the bash 3.2 that ships with macOS |
+| `macos-latest` (Homebrew bash) | the same host with bash 5 first on `PATH` |
+| `nvim plugins` (Linux + macOS) | a real lazy.nvim bootstrap and headless load |
+
+Linting runs on Ubuntu and Fedora, because the two ship different shellcheck
+versions.
+
 ## Remote Clipboard over SSH
 
 This repository includes clipboard helpers that auto-select the best available

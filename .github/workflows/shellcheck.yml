@@ -1,13 +1,43 @@
-on: [push, pull_request]
+name: Lint
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  lint:
+  ubuntu:
+    name: shellcheck (ubuntu-latest)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Install shellcheck
         run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      # tests/lint.sh selects by extension AND by shebang, so the extensionless
+      # clipboard wrappers under zsh/.local/bin are covered too.
       - name: Run shellcheck
-        run: |
-          shopt -s globstar
-          shellcheck **/*.sh
+        run: tests/lint.sh
+
+  # Fedora carries a newer shellcheck than Ubuntu's archive, and this is the
+  # distro the repo is developed on, so lint against that version as well.
+  fedora:
+    name: shellcheck (fedora-latest)
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install shellcheck
+        run: dnf -y install --setopt=install_weak_deps=False ShellCheck git
+
+      - uses: actions/checkout@v4
+
+      - name: Run shellcheck
+        run: tests/lint.sh

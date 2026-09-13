@@ -1,27 +1,148 @@
-on: [push, pull_request]
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+  ubuntu:
+    name: ubuntu-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            bats stow zsh tmux neovim xclip xsel xvfb
+
+      - name: Run tests
+        timeout-minutes: 10
+        env:
+          MATRIX_LABEL: ubuntu-latest
+        run: xvfb-run -a tests/run.sh
+
+  # GitHub has no Fedora runner, so run the suite in the official image on an
+  # Ubuntu host. This is the distro the repo is actually developed on, and it
+  # is the only job that exercises dnf-era tool versions (zsh, stow, tmux).
+  fedora:
+    name: fedora-${{ matrix.release }}
+    runs-on: ubuntu-latest
+    container: fedora:${{ matrix.release }}
+    # rawhide is the development branch and breaks for reasons unrelated to
+    # this repo, so it reports without failing the run.
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - release: latest
+            experimental: false
+          - release: rawhide
+            experimental: true
+    steps:
+      # Must precede checkout: without git in the image, actions/checkout
+      # silently falls back to downloading a tarball.
+      - name: Install dependencies
+        run: |
+          dnf -y install --setopt=install_weak_deps=False \
+            bats git stow zsh tmux neovim \
+            xclip xsel xorg-x11-server-Xvfb \
+            procps-ng findutils diffutils
+
+      - uses: actions/checkout@v4
+
+      - name: Run tests
+        timeout-minutes: 10
+        env:
+          MATRIX_LABEL: fedora-${{ matrix.release }}
+        # Container jobs run as root; tests that depend on permission bits
+        # being enforced skip themselves and say so in the summary.
+        run: xvfb-run -a tests/run.sh
+
+  macos:
+    name: macos-latest (${{ matrix.bash }} bash)
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # macOS still ships bash 3.2 as /bin/bash, and the scripts here use
+        # `#!/usr/bin/env bash`, so they run under whichever comes first on
+        # PATH. Both are real setups, and 3.2 has already broken this repo
+        # once (printf '\uHHHH' in the tmux-powerline OS segment).
+        bash: [system, homebrew]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install --quiet bats-core stow tmux neovim
+          if [ "${{ matrix.bash }}" = "homebrew" ]; then
+            brew install --quiet bash
+          fi
+
+      - name: Select the bash under test
+        run: |
+          if [ "${{ matrix.bash }}" = "homebrew" ]; then
+            echo "$(brew --prefix)/opt/bash/bin" >>"$GITHUB_PATH"
+          else
+            # Make sure no Homebrew bash shadows /bin/bash 3.2.
+            test "$(command -v bash)" = /bin/bash \
+              || echo "note: $(command -v bash) precedes /bin/bash"
+          fi
+
+      - name: Show the bash in use
+        run: bash --version | head -n 1
+
+      - name: Run tests
+        timeout-minutes: 10
+        env:
+          MATRIX_LABEL: macos-latest (${{ matrix.bash }} bash)
+        run: tests/run.sh
+
+  # Real plugin bootstrap: clones every lazy.nvim plugin and loads them
+  # headlessly. Kept separate because it is the only job that depends on
+  # upstream plugin repositories staying healthy.
+  nvim:
+    name: nvim plugins (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y bats xclip xvfb
+          sudo apt-get install -y --no-install-recommends bats neovim
+
       - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
-        run: |
-          brew install bats-core
-      - name: Run tests
-        timeout-minutes: 5
-        run: |
-          if [ "$RUNNER_OS" == "Linux" ]; then
-            xvfb-run -a bats tests
-          else
-            bats tests
-          fi
+        run: brew install --quiet bats-core neovim
+
+      - name: Cache lazy.nvim plugins
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/nvim/lazy
+          key: nvim-lazy-${{ matrix.os }}-${{ hashFiles('nvim/.config/nvim/lua/plugins/*.lua', 'nvim/.config/nvim/init.lua') }}
+          restore-keys: nvim-lazy-${{ matrix.os }}-
+
+      - name: Load the config headlessly
+        timeout-minutes: 15
+        run: tests/nvim-headless.sh
+
+      - name: Run the Neovim tests
+        timeout-minutes: 10
+        run: bats --tap tests/treesitter.bats

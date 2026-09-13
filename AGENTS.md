@@ -16,7 +16,8 @@ Treat it as an operational repo, not just a collection of config files.
 - `zsh/.zshrc`: interactive shell behavior and plugin loading.
 - `nvim/.config/nvim/`: Neovim configuration (Lazy.nvim based).
 - `tmux/.config/tmux/tmux.conf`: tmux behavior and clipboard integration.
-- `tests/`: Bats coverage for bootstrap and clipboard behavior.
+- `tests/`: Bats coverage for bootstrap, stow, clipboard, tmux and config
+  portability, plus `run.sh` (suite + skip report) and `lint.sh` (shellcheck).
 
 ## Change Rules
 
@@ -61,24 +62,54 @@ Treat it as an operational repo, not just a collection of config files.
 Run these after any change:
 
 ```bash
-# Run all tests
-bats tests/
+# Run all tests, with a summary of which tests skipped and why
+tests/run.sh
 
 # Individual test files if scope is narrow
-bats tests/bootstrap.bats
+bats tests/bootstrap.bats            # bootstrap.sh argv, with stow stubbed
+bats tests/stow-integration.bats     # bootstrap.sh against the real stow
 bats tests/clipboard-backend.bats
 bats tests/clipboard-integration.bats
+bats tests/clipboard-macos.bats      # macOS only; skips elsewhere
+bats tests/config-portability.bats   # zsh -n / bash -n / lua / hardcoded $HOME
+bats tests/tmux-config.bats
+
+# Lint every shell script, including the extensionless wrappers
+tests/lint.sh
 
 # Verify Neovim config and plugin startup headlessly
 tests/nvim-headless.sh
 
 # Optional: include :checkhealth output (may be noisier in restricted environments)
 tests/nvim-headless.sh --health
-
-# Lint shell scripts
-shellcheck bootstrap.sh zsh/.local/bin/*
-shellcheck tests/nvim-headless.sh
 ```
+
+Skips are the thing to read. Almost every suite here guards behaviour that only
+exists when the tool is installed, so a machine without `zsh`, `nvim`, `tmux`,
+`stow` or a clipboard goes green while testing very little. `tests/run.sh`
+prints the skip list; `tests/run.sh --strict` turns any skip into a failure.
+
+### CI
+
+`.github/workflows/bats.yml` runs the suite on ubuntu-latest, on fedora-latest
+and fedora-rawhide (container jobs — GitHub has no Fedora runner), and twice on
+macos-latest: once with the system bash 3.2 and once with Homebrew bash first on
+`PATH`. `.github/workflows/shellcheck.yml` runs `tests/lint.sh` on Ubuntu and
+Fedora.
+
+Two consequences worth remembering when writing tests:
+
+- Container jobs run as **root**, so anything asserting that a permission bit is
+  enforced must skip when `id -u` is 0.
+- macOS has no `sha256sum`, no GNU `readlink -f` guarantee, and `/bin/bash` is
+  3.2 — no `mapfile`, no `printf '\uHHHH'`, no associative arrays.
+
+### Tests must not touch the working tree
+
+`tests/stow-integration.bats` runs the real `stow`, so it copies `bootstrap.sh`
+and the package under test into a temp dir and runs from there. Any new test
+that stows, backs up, or writes files must do the same: a regression in
+`bootstrap.sh` should fail a test, never rename a tracked file.
 
 ## Coding Standards
 
