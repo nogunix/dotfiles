@@ -79,13 +79,20 @@ esac
 STUB
   chmod +x "$fake/uname"
 
+  # Always stub sw_vers, even to simulate it failing: on a real Mac the system
+  # one is still further down PATH and would answer for it.
   if [ -n "$product" ]; then
     cat >"$fake/sw_vers" <<STUB
 #!/bin/bash
 printf '%s\n' '$product'
 STUB
-    chmod +x "$fake/sw_vers"
+  else
+    cat >"$fake/sw_vers" <<'STUB'
+#!/bin/bash
+exit 1
+STUB
   fi
+  chmod +x "$fake/sw_vers"
 
   run env PATH="$fake:$PATH" bash -c \
     "source '$SEGMENTS/os_icon.sh' && run_segment"
@@ -101,7 +108,7 @@ STUB
 }
 
 @test "os_icon still says macOS when sw_vers gives nothing" {
-  render_segment_as Darwin 23.5.0 ""
+  render_segment_as Darwin 23.5.0 ""   # "" makes the sw_vers stub fail
 
   [ "$status" -eq 0 ]
   [[ "$output" == *"macOS"* ]]
