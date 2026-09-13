@@ -36,9 +36,16 @@ vim.api.nvim_create_autocmd({ "BufWinEnter", "InsertLeave" }, {
 })
 
 -- vim.cmd("set mouse=") -- Uncomment to enable mouse
-vim.cmd('filetype plugin indent on') -- Enable file type detection, plugins, and indentation
-vim.cmd('syntax on')                -- Enable syntax highlighting
-vim.opt.title = true                -- Display filename in terminal title bar
+-- filetype detection/plugin/indent and syntax are on by default in Neovim
+-- (:help nvim-defaults); re-enabling them only re-sources the runtime files.
+vim.opt.title = true -- Display filename in terminal title bar
+
+-- No plugin here needs the perl/ruby/node/python3 hosts. Skipping them avoids
+-- the interpreter probe at startup and keeps :checkhealth quiet.
+vim.g.loaded_perl_provider = 0
+vim.g.loaded_ruby_provider = 0
+vim.g.loaded_node_provider = 0
+vim.g.loaded_python3_provider = 0
 
 -- Search for tags files up to the parent directory
 vim.opt.tags = "./tags;,tags"
@@ -93,22 +100,24 @@ vim.opt.rtp:prepend(lazypath)
 
 require('lazy').setup({
   { import = 'plugins' },
+}, {
+  performance = {
+    rtp = {
+      -- Archive/misc runtime plugins this config never reaches for. netrw and
+      -- matchit stay enabled: they back `gx`, directory browsing and `%`.
+      disabled_plugins = {
+        'gzip',
+        'tarPlugin',
+        'zipPlugin',
+        'tutor',
+        'rplugin',
+      },
+    },
+  },
 })
 
--- Telescope keymaps (kept at top level so they bind without :Telescope first)
-local tb = require('telescope.builtin')
-
--- LSP (selection with preview via Telescope)
-vim.keymap.set('n', 'gd', tb.lsp_definitions,        { desc = 'LSP: Go to Definition (Telescope)' })
-vim.keymap.set('n', 'gr', tb.lsp_references,         { desc = 'LSP: References (Telescope)' })
-vim.keymap.set('n', 'gi', tb.lsp_implementations,    { desc = 'LSP: Implementations (Telescope)' })
-vim.keymap.set('n', 'gD', tb.lsp_type_definitions,   { desc = 'LSP: Type Definitions (Telescope)' })
-vim.keymap.set('n', '<leader>ds', tb.lsp_document_symbols, { desc = 'LSP: Document Symbols' })
-vim.keymap.set('n', '<leader>ws', tb.lsp_dynamic_workspace_symbols, { desc = 'LSP: Workspace Symbols' })
-
--- ctags (Telescope picker)
-vim.keymap.set('n', '<leader>tt', tb.tags,           { desc = 'ctags: Project tags' })
-vim.keymap.set('n', '<leader>tb', tb.current_buffer_tags, { desc = 'ctags: Current buffer tags' })
+-- Telescope keymaps live in lua/plugins/telescope.lua as lazy `keys` entries,
+-- so pressing one loads Telescope instead of requiring it at startup.
 
 -- Traditional: Built-in tag jump (instant movement)
 -- Ctrl-] to go to definition, Ctrl-T to go back (Vim standard)

@@ -1,5 +1,6 @@
 return {
   'ludovicchabant/vim-gutentags',
+  event = { 'BufReadPost', 'BufNewFile' },
   init = function()
     local homebrew_ctags = '/opt/homebrew/bin/ctags'
 

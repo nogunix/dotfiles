@@ -9,6 +9,7 @@ end
 
 return {
   'nvim-lualine/lualine.nvim',
+  event = 'VeryLazy',
   config = function()
     setup_lualine()
     vim.api.nvim_create_autocmd('FileType', {
