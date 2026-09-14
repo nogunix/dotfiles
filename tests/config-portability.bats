@@ -38,9 +38,17 @@ setup() {
   [[ "$output" == *"Usage:"* ]]
   [[ "$output" != *"Not a directory"* ]]
 
+  # Force the OSC 52 backend. What is under test is self-location, but with a
+  # DISPLAY and a real xclip — which is exactly the Linux CI jobs, running the
+  # suite under xvfb-run — the wrappers reach the real xclip, which daemonises
+  # to keep owning the selection and leaves this pipe open. `run` captures
+  # through a command substitution and waits for EOF, so the whole job hangs
+  # until it is killed. tests/clipboard-integration.bats sidesteps the same
+  # trap by calling outside `run` and reaping xclip in its teardown.
   local bin="$REPO_ROOT/zsh/.local/bin"
   for script in clipboard-backend clipboard-copy xclip xsel; do
-    run bash -c "cd '$bin' && printf 'x' | bash $script </dev/null 2>&1"
+    run bash -c "cd '$bin' && printf 'x' |
+      env -u DISPLAY -u WAYLAND_DISPLAY bash $script </dev/null 2>&1"
     [[ "$output" != *"Not a directory"* ]] || {
       echo "$script could not find its own directory: $output"
       false
