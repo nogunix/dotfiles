@@ -14,7 +14,7 @@ Includes managed configuration for:
 
 - Zsh (`.zshrc`) with [Zinit](https://github.com/zdharma-continuum/zinit) plugin manager
 - Neovim (`init.lua` and other configs)
-- Tmux (`tmux.conf`)
+- Tmux (`tmux.conf`), with a status bar rendered by tmux itself — no plugin manager
 - Universal Ctags (`ctags`)
 - Clipboard wrappers that prefer Wayland/X11/macOS tools locally and OSC 52 for remote sessions
 
@@ -68,7 +68,7 @@ using `dnf`, `apt-get`, `pacman`, or Homebrew.
 | `-n`             | Dry run (show what would happen) |
 | `-u "pkg1 pkg2"` | Unstow only the listed packages (implies `-U`) |
 | `-U`             | Unstow (remove symlinks) |
-| `--no-install`   | Skip every install step: base packages, ctags, Zinit, TPM |
+| `--no-install`   | Skip every install step: base packages, ctags, Zinit |
 | `-h`, `--help`   | Show help message |
 
 ### Examples

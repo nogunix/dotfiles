@@ -78,7 +78,7 @@ jobs:
         # macOS still ships bash 3.2 as /bin/bash, and the scripts here use
         # `#!/usr/bin/env bash`, so they run under whichever comes first on
         # PATH. Both are real setups, and 3.2 has already broken this repo
-        # once (printf '\uHHHH' in the tmux-powerline OS segment).
+        # once (printf '\uHHHH' in the tmux OS-label helper).
         bash: [system, homebrew]
     steps:
       - uses: actions/checkout@v4

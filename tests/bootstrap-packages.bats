@@ -67,7 +67,7 @@ STUB
 bootstrap() {
   # -u rather than -i: an emptied environment would also drop the variables
   # kcov uses to trace bash, so a coverage run would miss every line below.
-  # The XDG ones are cleared because install_tpm derives its path from them.
+  # The XDG ones are cleared so the Zinit path is derived from $HOME alone.
   run env -u XDG_DATA_HOME -u XDG_CONFIG_HOME -u XDG_CACHE_HOME \
     HOME="$HOME" PATH="$BIN" PM_LOG="$PM_LOG" STOW_LOG="$STOW_LOG" \
     /bin/bash "$REPO_ROOT/bootstrap.sh" "$@" </dev/null
@@ -262,39 +262,17 @@ STUB
 
 # --- post-install steps ------------------------------------------------------
 
-@test "skips the tmux plugin manager under --no-install" {
-  bootstrap -p "tmux" --no-install
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"Skipping TPM install"* ]]
-}
-
-@test "installs TPM and its plugins for the tmux package" {
+# The tmux status bar is rendered by tmux itself, so the tmux package has no
+# post-install step left: it used to clone TPM and run its plugin installer.
+# Guard that, otherwise a revert would quietly reintroduce a ~100 ms plugin
+# load into every tmux config parse.
+@test "stowing tmux installs no plugin manager" {
   stub dnf
   stub git
   stub tmux
 
   bootstrap -p "tmux"
   [ "$status" -eq 0 ]
-  [[ "$(pm_log)" == *"git clone --depth 1 https://github.com/tmux-plugins/tpm"* ]]
-  [[ "$output" == *"Installing tmux plugins via TPM"* ]]
-}
-
-@test "leaves an existing TPM checkout in place" {
-  stub dnf
-  stub git
-  mkdir -p "$HOME/.local/share/tmux/plugins/tpm"
-
-  bootstrap -p "tmux"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"TPM already installed"* ]]
   [[ "$(pm_log)" != *"git clone"* ]]
-}
-
-@test "tells the user how to finish when tmux itself is missing" {
-  stub dnf
-  stub git
-
-  bootstrap -p "tmux"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"tmux not found; skipping plugin install"* ]]
+  [ ! -d "$HOME/.local/share/tmux/plugins" ]
 }

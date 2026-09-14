@@ -38,7 +38,7 @@ Options:
   -n              Dry-run (show what would happen)
   -u "pkg1 pkg2"  Unstow only the specified packages (implies -U)
   -U              Unstow (remove symlinks) instead of stowing
-  --no-install    Skip every install step: base packages, ctags, Zinit, TPM
+  --no-install    Skip every install step: base packages, ctags, Zinit
   -h, --help      Show this help
 
 Examples:
@@ -212,29 +212,6 @@ install_zinit() {
   fi
 }
 
-# Install TPM (tmux plugin manager) and the plugins declared in tmux.conf.
-# Plugins live under the data dir (matches TMUX_PLUGIN_MANAGER_PATH in tmux.conf)
-# so they stay out of the stow-managed ~/.config/tmux directory.
-install_tpm() {
-  local tpm_home="${XDG_DATA_HOME:-$HOME/.local/share}/tmux/plugins/tpm"
-  if [[ -d "$tpm_home" ]]; then
-    log "TPM already installed at $tpm_home"
-  else
-    log "Installing TPM (tmux plugin manager)..."
-    git clone --depth 1 https://github.com/tmux-plugins/tpm "$tpm_home"
-  fi
-
-  # Install/refresh the declared plugins non-interactively.
-  if have tmux; then
-    log "Installing tmux plugins via TPM..."
-    export TMUX_PLUGIN_MANAGER_PATH="${XDG_DATA_HOME:-$HOME/.local/share}/tmux/plugins/"
-    "$tpm_home/bin/install_plugins" \
-      || err "TPM plugin install failed; run '<prefix> + I' inside tmux to retry."
-  else
-    log "tmux not found; skipping plugin install (run '<prefix> + I' after installing tmux)."
-  fi
-}
-
 # --- Parse args ---
 while (( "$#" )); do
   case "${1:-}" in
@@ -284,14 +261,6 @@ if [[ " ${STOW_PKGS[*]} " == *" zsh "* && $UNSTOW == false ]]; then
     log "Skipping Zinit install (--no-install)."
   else
     install_zinit
-  fi
-fi
-
-if [[ " ${STOW_PKGS[*]} " == *" tmux "* && $UNSTOW == false ]]; then
-  if $NO_INSTALL; then
-    log "Skipping TPM install (--no-install)."
-  else
-    install_tpm
   fi
 fi
 

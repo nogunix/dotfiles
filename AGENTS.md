@@ -15,7 +15,8 @@ Treat it as an operational repo, not just a collection of config files.
 - `zsh/.local/bin/`: compatibility wrappers and helper commands.
 - `zsh/.zshrc`: interactive shell behavior and plugin loading.
 - `nvim/.config/nvim/`: Neovim configuration (Lazy.nvim based).
-- `tmux/.config/tmux/tmux.conf`: tmux behavior and clipboard integration.
+- `tmux/.config/tmux/`: `tmux.conf` (behavior, clipboard integration and the
+  status bar) plus the two helpers it calls, `os-label.sh` and `git-branch.sh`.
 - `tests/`: Bats coverage for bootstrap, stow, clipboard, tmux and config
   portability, plus `run.sh` (suite + skip report), `lint.sh` (shellcheck) and
   `coverage.sh` (kcov).
@@ -57,6 +58,23 @@ Treat it as an operational repo, not just a collection of config files.
 - `xclip` and `xsel` wrappers should preserve copy-style compatibility where possible.
 - OSC 52 is copy-only here; do not pretend remote clipboard readback is portable.
 - tmux clipboard integration should continue to work over SSH sessions.
+
+## tmux Status Bar Invariants
+
+- The status bar is rendered by tmux's own format strings. There is no plugin
+  and no plugin manager; do not reintroduce TPM or tmux-powerline to add a
+  segment.
+- `tmux.conf` must contain exactly one `#(...)`, the git chip. Every other
+  `#(...)` is a process per client per `status-interval`, which is what made
+  the old setup cost ~212 ms every 5 s.
+- Anything that cannot change while the server is up (the OS label, say)
+  belongs in a user option resolved once by `run-shell` at config load, not in
+  a format that re-runs on every redraw.
+- Colours live in the `%hidden` palette at the top of the status section.
+  `git-branch.sh` emits `@git_pre` / `@git_post` / `@git_none` references
+  rather than colours of its own, so keep the two in sync.
+- tmux re-expands the output of `#(...)` as a format, so anything interpolated
+  from the outside world (a branch name) must have its `#` escaped as `##`.
 
 ## Validation
 
