@@ -178,6 +178,14 @@ STUB
   [[ "$output" == *$''* ]]
 }
 
+# The label with its Nerd Font glyph stripped. tmux rewrites every multi-byte
+# character to '_' unless the locale is UTF-8, and the Fedora CI containers
+# have no LANG set at all, so only the ASCII half of the label survives a round
+# trip through tmux. That half is what these assertions can rely on.
+os_label_text() {
+  "$TMUX_DIR/os-label.sh" | cut -d' ' -f2-
+}
+
 @test "tmux.conf resolves the OS label once, at config load" {
   command -v tmux >/dev/null || skip "tmux not installed"
 
@@ -188,10 +196,14 @@ STUB
   run tmux -L "$SOCKET" show -gv @os_label
   [ "$status" -eq 0 ]
   [ -n "$output" ]
-  [[ "$output" == *"$("$TMUX_DIR/os-label.sh")"* ]]
+  [[ "$output" == *"$(os_label_text)"* ]]
+
+  # ...and status-left reads that option rather than running anything itself.
+  run grep 'set -g status-left ' "$TMUX_CONF"
+  [[ "$output" == *'#{@os_label}'* ]]
 
   run tmux -L "$SOCKET" display -p '#{E:status-left}'
-  [[ "$output" == *"$("$TMUX_DIR/os-label.sh")"* ]]
+  [[ "$output" == *"$(os_label_text)"* ]]
 
   tmux -L "$SOCKET" kill-server
 }
