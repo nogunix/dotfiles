@@ -73,6 +73,10 @@ Treat it as an operational repo, not just a collection of config files.
 - Colours live in the `%hidden` palette at the top of the status section.
   `git-branch.sh` emits `@git_pre` / `@git_post` / `@git_none` references
   rather than colours of its own, so keep the two in sync.
+- The bar assumes a Nerd Font: the powerline separators (U+E0B0, U+E0B2), the
+  branch glyph (U+E0A0) in `tmux.conf`, and the OS glyphs in `os-label.sh`.
+  Adding or changing a glyph means updating the Nerd Font table in
+  `README.md` ("Tmux Status Bar") in the same turn.
 - tmux re-expands the output of `#(...)` as a format, so anything interpolated
   from the outside world (a branch name) must have its `#` escaped as `##`.
 

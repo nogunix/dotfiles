@@ -14,7 +14,8 @@ Includes managed configuration for:
 
 - Zsh (`.zshrc`) with [Zinit](https://github.com/zdharma-continuum/zinit) plugin manager
 - Neovim (`init.lua` and other configs)
-- Tmux (`tmux.conf`), with a status bar rendered by tmux itself — no plugin manager
+- Tmux (`tmux.conf`), with a status bar rendered by tmux itself — no plugin
+  manager, but it does need a Nerd Font
 - Universal Ctags (`ctags`)
 - Clipboard wrappers that prefer Wayland/X11/macOS tools locally and OSC 52 for remote sessions
 
@@ -25,6 +26,8 @@ Includes managed configuration for:
 - Curl
 - Optional: Zsh, Tmux, Neovim
 - Optional: Universal Ctags when the `ctags` stow package is selected
+- Optional: a [Nerd Font](https://www.nerdfonts.com/) in the terminal, required
+  by the tmux status bar (see [Tmux Status Bar](#tmux-status-bar))
 
 The `bootstrap.sh` script checks for missing tools and attempts to install them
 using `dnf`, `apt-get`, `pacman`, or Homebrew.
@@ -131,6 +134,69 @@ What is left uncovered is deliberate: the `pbcopy` arm of `clipboard-copy`
 needs a real macOS pasteboard (the macOS jobs exercise it, but coverage only
 runs on Fedora), and two `return 1` arms in `bootstrap.sh` are unreachable
 defensive code.
+
+## Tmux Status Bar
+
+The status bar is rendered by tmux's own format strings — there is no plugin and
+no plugin manager — and it **assumes a [Nerd Font](https://www.nerdfonts.com/)**
+in the terminal that displays the session.
+
+Glyphs in use:
+
+| Glyph | Code point | Where |
+|-------|------------|-------|
+| `` `` | U+E0B0 / U+E0B2 | powerline separators between chips (`tmux.conf`) |
+| `` | U+E0A0 | the git branch chip (`tmux.conf`) |
+| `` | U+F179 | the OS chip on macOS (`os-label.sh`) |
+| `` | U+F17C | the OS chip on Linux (`os-label.sh`) |
+| `` | U+F120 | the OS chip on BSD and anything else (`os-label.sh`) |
+
+Without a Nerd Font the bar still works, but those five characters render as
+tofu boxes (`□`).
+
+### Installing one
+
+Any patched font works; the examples use Fira Code.
+
+```bash
+# macOS
+brew install --cask font-fira-code-nerd-font
+
+# Arch
+sudo pacman -S ttf-firacode-nerd
+
+# Fedora / Debian / Ubuntu — check for a packaged build first,
+# the names are not stable across releases
+dnf search nerd-fonts
+apt-cache search nerd | grep -i font
+```
+
+If the distro has no package, install into the user font directory:
+
+```bash
+mkdir -p ~/.local/share/fonts
+curl -fsSLO https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FiraCode.zip
+unzip -d ~/.local/share/fonts FiraCode.zip
+fc-cache -f
+```
+
+Then select the patched font in the terminal's profile. Over SSH the font is a
+property of the *local* terminal, so install it on the machine you are sitting
+at, not on the remote host.
+
+### Running without one
+
+Blank the three glyph variables near the top of the status section in
+`tmux/.config/tmux/tmux.conf`:
+
+```tmux
+%hidden SEP_R=""
+%hidden SEP_L=""
+%hidden GIT_SYM=""
+```
+
+and drop the `glyph=` assignments in `tmux/.config/tmux/os-label.sh`. The chips
+keep their colours; they just lose the pointed edges and the icons.
 
 ## Remote Clipboard over SSH
 
