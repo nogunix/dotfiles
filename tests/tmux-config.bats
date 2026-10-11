@@ -80,6 +80,55 @@ stowed_home() {
   done
 }
 
+# --- focus mode --------------------------------------------------------------
+
+# There is no command that makes tmux act on a key binding, but `list-keys`
+# prints the binding as a command line that can be sourced back in. Sourcing it
+# runs exactly what prefix+F runs, rather than a copy of it kept in this file.
+press_focus_key() {
+  tmux -L "$SOCKET" list-keys -T prefix \
+    | sed -n 's/^bind-key  *-T prefix  *F  *//p' >"$TEST_TMP/focus-key.tmux"
+  [ -s "$TEST_TMP/focus-key.tmux" ]
+  tmux -L "$SOCKET" source-file "$TEST_TMP/focus-key.tmux"
+}
+
+focus_state() {
+  tmux -L "$SOCKET" display -p '#{@focus_mode}/#{status}/#{window_zoomed_flag}'
+}
+
+start_focus_session() {
+  env HOME="$(stowed_home)" \
+    tmux -L "$SOCKET" -f "$TMUX_CONF" new-session -d -x 80 -y 24
+  # Two panes, so the zoom flag means something.
+  tmux -L "$SOCKET" split-window -d
+}
+
+@test "focus mode hides the status bar and zooms the pane, then restores both" {
+  command -v tmux >/dev/null || skip "tmux not installed"
+  start_focus_session
+
+  [ "$(focus_state)" = "0/on/0" ]
+  press_focus_key
+  [ "$(focus_state)" = "1/off/1" ]
+  press_focus_key
+  [ "$(focus_state)" = "0/on/0" ]
+
+  tmux -L "$SOCKET" kill-server
+}
+
+@test "focus mode leaves an already zoomed pane zoomed" {
+  command -v tmux >/dev/null || skip "tmux not installed"
+  start_focus_session
+
+  # Zooming by hand first used to be undone by the unconditional resize-pane -Z.
+  tmux -L "$SOCKET" resize-pane -Z
+  [ "$(focus_state)" = "0/on/1" ]
+  press_focus_key
+  [ "$(focus_state)" = "1/off/1" ]
+
+  tmux -L "$SOCKET" kill-server
+}
+
 # --- os-label.sh -------------------------------------------------------------
 
 @test "os-label renders a label for this platform" {

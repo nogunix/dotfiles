@@ -76,7 +76,11 @@ Treat it as an operational repo, not just a collection of config files.
 - The bar assumes a Nerd Font: the powerline separators (U+E0B0, U+E0B2), the
   branch glyph (U+E0A0) in `tmux.conf`, and the OS glyphs in `os-label.sh`.
   Adding or changing a glyph means updating the Nerd Font table in
-  `README.md` ("Tmux Status Bar") in the same turn.
+  `README.md` ("Tmux") in the same turn.
+- Focus mode (`prefix+F`) keeps its state in `@focus_mode`, because `status`
+  cannot be read back as a boolean the way `mouse` can. Its `resize-pane -Z`
+  must stay guarded by `window_zoomed_flag` in both directions: `@focus_mode`
+  is global, the zoom flag is per-window, and the user may zoom by hand.
 - tmux re-expands the output of `#(...)` as a format, so anything interpolated
   from the outside world (a branch name) must have its `#` escaped as `##`.
 

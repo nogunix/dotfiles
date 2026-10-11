@@ -27,7 +27,7 @@ Includes managed configuration for:
 - Optional: Zsh, Tmux, Neovim
 - Optional: Universal Ctags when the `ctags` stow package is selected
 - Optional: a [Nerd Font](https://www.nerdfonts.com/) in the terminal, required
-  by the tmux status bar (see [Tmux Status Bar](#tmux-status-bar))
+  by the tmux status bar (see [Tmux](#tmux))
 
 The `bootstrap.sh` script checks for missing tools and attempts to install them
 using `dnf`, `apt-get`, `pacman`, or Homebrew.
@@ -135,7 +135,9 @@ needs a real macOS pasteboard (the macOS jobs exercise it, but coverage only
 runs on Fedora), and two `return 1` arms in `bootstrap.sh` are unreachable
 defensive code.
 
-## Tmux Status Bar
+## Tmux
+
+### Status bar: Nerd Font required
 
 The status bar is rendered by tmux's own format strings — there is no plugin and
 no plugin manager — and it **assumes a [Nerd Font](https://www.nerdfonts.com/)**
@@ -197,6 +199,22 @@ Blank the three glyph variables near the top of the status section in
 
 and drop the `glyph=` assignments in `tmux/.config/tmux/os-label.sh`. The chips
 keep their colours; they just lose the pointed edges and the icons.
+
+### Key bindings
+
+The prefix is the default `C-b`.
+
+| Key | What it does |
+|-----|--------------|
+| `prefix` + `F` | Focus mode: hide the status bar and zoom the current pane |
+| `prefix` + `m` | Toggle mouse mode |
+| `prefix` + `r` | Reload `~/.config/tmux/tmux.conf` |
+| `y` (copy-mode) | Copy the selection through `clip` to the local clipboard |
+
+Focus mode gives a long agent transcript the whole terminal, and `prefix` + `F`
+again puts the chrome back. The zoom is conditional in both directions: a pane
+you had already zoomed yourself stays zoomed when focus mode starts, and one you
+unzoomed by hand is not re-zoomed when it ends.
 
 ## Remote Clipboard over SSH
 
