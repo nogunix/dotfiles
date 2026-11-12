@@ -30,7 +30,7 @@ Treat it as an operational repo, not just a collection of config files.
 - Keep shell scripts POSIX/Bash-friendly and compatible with `shellcheck`.
 - Update tests when behavior changes. Do not change behavior silently.
 
-## Codex Specifics
+## Agent Specifics
 
 - **Research First**: Before modifying `bootstrap.sh` or core clipboard scripts, read the existing logic carefully. The bootstrap script handles multiple package managers (`dnf`, `apt-get`, `pacman`, `brew`).
 - **Surgical Edits**: Make narrow changes that preserve user-managed files and existing stow behavior.
