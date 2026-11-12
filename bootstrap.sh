@@ -5,6 +5,13 @@ set -euo pipefail
 # Add "ctags" so we can manage ~/.ctags.d via GNU Stow
 DEFAULT_STOW_PKGS=("zsh" "nvim" "tmux" "ctags")
 
+# Directories that other tools install into (Claude Code, uv, pipx, ...).
+# Left alone, stow folds such a directory into one symlink back into the repo,
+# or folds its parent when that does not exist yet, and from then on every
+# binary installed there lands in the working tree. These are always created
+# as real directories, so stow links the package's files into them one by one.
+NO_FOLD_DIRS=(".local/bin")
+
 # --- Globals ---
 SCRIPT_PATH="${BASH_SOURCE[0]}"
 # ${path%/*} leaves a bare filename untouched, so `bash bootstrap.sh` would
@@ -176,6 +183,41 @@ prebackup_for_pkg() {
   done < <(cd "$base" && find . -type f -print0)
 }
 
+# The path a directory symlink resolves to, or nothing if it is dangling.
+physical_dir() { (cd -- "$1" 2>/dev/null && pwd -P) || true; }
+
+# ensure_real_dirs — make every NO_FOLD_DIRS entry a selected package ships a
+# real directory under $TARGET_DIR, unfolding one an earlier stow left as a
+# symlink into this repo. Files already installed through that symlink live in
+# the package directory; they are listed so they can be moved out by hand.
+ensure_real_dirs() {
+  local pkg dir dst resolved
+  for pkg in "${STOW_PKGS[@]}"; do
+    for dir in "${NO_FOLD_DIRS[@]}"; do
+      [[ -d "$REPO_ROOT/$pkg/$dir" ]] || continue
+      dst="$TARGET_DIR/$dir"
+
+      if [[ -L "$dst" ]]; then
+        resolved="$(physical_dir "$dst")"
+        [[ -n "$resolved" ]] || die "Dangling symlink in the way: $dst"
+        [[ "$resolved" == "$REPO_ROOT" || "$resolved" == "$REPO_ROOT"/* ]] || continue
+        log "Unfolding $dst (was a symlink into the repo)"
+        if have git && git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+          local untracked
+          untracked="$(git -C "$REPO_ROOT" ls-files --others --exclude-standard -- "$pkg/$dir")"
+          [[ -z "$untracked" ]] || err "Untracked files in $pkg/$dir, installed through the old symlink; move them to $dst:"$'\n'"$untracked"
+        fi
+        $DRY_RUN && continue
+        rm -- "$dst"
+      fi
+
+      [[ -d "$dst" ]] && continue
+      log "Creating $dst"
+      $DRY_RUN || mkdir -p -- "$dst"
+    done
+  done
+}
+
 validate_selected_packages() {
   local p
   for p in "${STOW_PKGS[@]}"; do
@@ -191,6 +233,7 @@ run_stow() {
     log "Unstowing: ${STOW_PKGS[*]}"
     (set -x; stow -D "${stow_args[@]}" "${STOW_PKGS[@]}")
   else
+    ensure_real_dirs
     if ! $ADOPT; then
       for p in "${STOW_PKGS[@]}"; do
         prebackup_for_pkg "$p"

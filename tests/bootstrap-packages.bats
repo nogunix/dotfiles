@@ -21,8 +21,9 @@ setup() {
 
   # Only the handful of real tools bootstrap.sh shells out to. Notably absent:
   # every package manager, so each test decides which ones exist.
-  # bash too: install_zinit pipes the fetched installer into it.
-  for cmd in find date mv readlink head cat bash; do
+  # bash too: install_zinit pipes the fetched installer into it. mkdir and rm:
+  # ensure_real_dirs creates (or unfolds) ~/.local/bin for the zsh package.
+  for cmd in find date mv rm mkdir readlink head cat bash; do
     ln -s "$(command -v "$cmd")" "$BIN/$cmd"
   done
 

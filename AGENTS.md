@@ -50,6 +50,16 @@ Treat it as an operational repo, not just a collection of config files.
 - Large plugin configurations should be moved to `nvim/.config/nvim/lua/plugins/`.
 - Ensure `lua_ls` diagnostics are clean before finishing.
 
+## Stow Folding
+
+- `NO_FOLD_DIRS` in `bootstrap.sh` lists directories other tools install into
+  (currently `.local/bin`). `ensure_real_dirs` creates them as real directories
+  before stowing, and unfolds one an earlier stow left as a symlink into the
+  repo, so installers never write into the working tree.
+- Do not switch to a global `stow --no-folding`: `~/.config/nvim` folding is
+  relied on, so new plugin files created through it land in the repo.
+- A symlink there that points outside the repo is the user's; never remove it.
+
 ## Clipboard Invariants
 
 - `clip` should remain the stable user-facing copy command.

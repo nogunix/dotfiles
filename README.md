@@ -288,6 +288,20 @@ ssh -Y user@server
 
 When not using `--adopt`, any existing file that would conflict is automatically backed up with a `.bak.<timestamp>` suffix in its original location.
 
+### `~/.local/bin` is a real directory
+
+Stow normally *folds* a directory it can own outright into a single symlink, so
+`~/.local/bin` used to become a link to `zsh/.local/bin` — and every binary an
+installer dropped there (Claude Code, uv, pipx, ...) ended up in the repo.
+`bootstrap.sh` now always creates `~/.local/bin` as a real directory and links
+the wrappers into it one by one. Other directories (`~/.config/nvim`, for one)
+still fold, so a new file created there still lands in the repo.
+
+On a machine stowed before this change, re-running `./bootstrap.sh` unfolds the
+old symlink. Anything that had been installed through it is still sitting in
+`zsh/.local/bin` as an untracked file; bootstrap lists those, and they should be
+moved to `~/.local/bin` by hand.
+
 ## Validation
 
 Run these after changing the repo:

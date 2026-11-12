@@ -177,3 +177,78 @@ assert_package_intact() {
   [ ! -e "$STOWED" ]
   assert_package_intact
 }
+
+# --- directories other tools install into (NO_FOLD_DIRS) ---------------------
+#
+# A package shipping ~/.local/bin, standing in for zsh. Without help, stow folds
+# ~/.local/bin (or ~/.local itself, on a fresh HOME) into one symlink back into
+# the repo, and every binary an installer drops there then lands in the tree.
+
+make_bin_pkg() {
+  mkdir -p "$REPO_ROOT/binpkg/.local/bin"
+  printf '#!/bin/sh\necho hello\n' >"$REPO_ROOT/binpkg/.local/bin/hello"
+  chmod +x "$REPO_ROOT/binpkg/.local/bin/hello"
+}
+
+@test "a fresh HOME gets a real ~/.local and ~/.local/bin" {
+  make_bin_pkg
+
+  bootstrap -p "binpkg"
+  [ "$status" -eq 0 ]
+
+  [ -d "$HOME/.local" ] && [ ! -L "$HOME/.local" ]
+  [ -d "$HOME/.local/bin" ] && [ ! -L "$HOME/.local/bin" ]
+  [ -L "$HOME/.local/bin/hello" ]
+  assert_stowed "$HOME/.local/bin/hello"
+
+  # What an installer writes afterwards stays out of the repo.
+  printf 'x\n' >"$HOME/.local/bin/installed"
+  [ ! -e "$REPO_ROOT/binpkg/.local/bin/installed" ]
+}
+
+@test "unfolds a ~/.local/bin an earlier stow left as a symlink" {
+  make_bin_pkg
+  mkdir -p "$HOME/.local"
+  ln -s "../../repo/binpkg/.local/bin" "$HOME/.local/bin"
+  [ -f "$HOME/.local/bin/hello" ]   # the folded layout really resolves
+
+  bootstrap -p "binpkg"
+  [ "$status" -eq 0 ]
+
+  [ ! -L "$HOME/.local/bin" ]
+  [ -L "$HOME/.local/bin/hello" ]
+  assert_stowed "$HOME/.local/bin/hello"
+  [ -f "$REPO_ROOT/binpkg/.local/bin/hello" ]
+
+  # Idempotent: a second run neither re-unfolds nor backs anything up.
+  bootstrap -p "binpkg"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"Unfolding"* ]]
+  run bash -c "ls -A '$HOME/.local/bin'"
+  [ "$output" = "hello" ]
+}
+
+@test "dry-run leaves a folded ~/.local/bin in place" {
+  make_bin_pkg
+  mkdir -p "$HOME/.local"
+  ln -s "../../repo/binpkg/.local/bin" "$HOME/.local/bin"
+
+  bootstrap -p "binpkg" -n
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Unfolding"* ]]
+  [ -L "$HOME/.local/bin" ]
+}
+
+@test "never removes a ~/.local/bin symlink that points outside the repo" {
+  make_bin_pkg
+  mkdir -p "$HOME/.local" "$TEST_TMP/elsewhere"
+  printf 'x\n' >"$TEST_TMP/elsewhere/mine"
+  ln -s "$TEST_TMP/elsewhere" "$HOME/.local/bin"
+
+  # stow itself refuses to stow through a symlink it does not own; whatever it
+  # decides, the user's own link and what is behind it must survive.
+  bootstrap -p "binpkg"
+  [[ "$output" != *"Unfolding"* ]]
+  [ -L "$HOME/.local/bin" ]
+  [ -f "$TEST_TMP/elsewhere/mine" ]
+}
