@@ -129,6 +129,18 @@ start_focus_session() {
   tmux -L "$SOCKET" kill-server
 }
 
+@test "tmux.conf forwards focus events to panes" {
+  command -v tmux >/dev/null || skip "tmux not installed"
+
+  env HOME="$(stowed_home)" \
+    tmux -L "$SOCKET" -f "$TMUX_CONF" new-session -d -x 80 -y 24
+  run tmux -L "$SOCKET" show-options -gv focus-events
+  [ "$status" -eq 0 ]
+  [ "$output" = "on" ]
+
+  tmux -L "$SOCKET" kill-server
+}
+
 # --- os-label.sh -------------------------------------------------------------
 
 @test "os-label renders a label for this platform" {

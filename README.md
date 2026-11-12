@@ -216,6 +216,10 @@ again puts the chrome back. The zoom is conditional in both directions: a pane
 you had already zoomed yourself stays zoomed when focus mode starts, and one you
 unzoomed by hand is not re-zoomed when it ends.
 
+`focus-events` is on, so applications in a pane are told when the terminal
+gains or loses focus. Neovim uses this to fire `FocusGained` / `FocusLost`,
+which lets `autoread` reload a file another tool changed while you were away.
+
 ## Remote Clipboard over SSH
 
 This repository includes clipboard helpers that auto-select the best available
