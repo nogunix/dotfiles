@@ -26,6 +26,22 @@ teardown() {
   [ -n "${TEST_TMP:-}" ] && rm -rf "$TEST_TMP"
 }
 
+# What the panes are doing, for a failing assertion to print. bats shows a
+# failed test's output, so this is the evidence when a pane never came up.
+pane_diag() {
+  {
+    echo "--- $(tmux -V)"
+    tmux -L "$SOCKET" list-panes -a \
+      -F '#{session_name}:#{window_index}.#{pane_index} cmd=#{pane_current_command} dead=#{pane_dead}' \
+      2>&1 || true
+    local p
+    for p in $(tmux -L "$SOCKET" list-panes -a -F '#{session_name}:#{window_index}.#{pane_index}' 2>/dev/null); do
+      echo "--- screen of $p"
+      tmux -L "$SOCKET" capture-pane -p -t "$p" 2>&1 | grep -v '^$' || true
+    done
+  } >&2
+}
+
 # A HOME that looks like the stowed layout, so the paths tmux.conf uses to
 # reach its own helper scripts are exercised rather than assumed.
 stowed_home() {
@@ -35,6 +51,10 @@ stowed_home() {
   # With no startup file at all, Debian's zsh opens zsh-newuser-install in the
   # pane, which swallows whatever a test types into it.
   : >"$home/.zshrc"
+  # Debian's /etc/zsh/zshrc also runs compinit unless told not to (zsh/.zshenv
+  # does the same), and on a host with group-writable fpath dirs -- GitHub's
+  # Ubuntu runners -- that stops at "Ignore insecure directories [y/n]?".
+  printf 'skip_global_compinit=1\n' >"$home/.zshenv"
   printf '%s\n' "$home"
 }
 
@@ -168,7 +188,7 @@ start_focus_session() {
     [ -e "$home/zshrc-ran" ] && break
     sleep 0.1
   done
-  [ -e "$home/zshrc-ran" ]
+  [ -e "$home/zshrc-ran" ] || { pane_diag; false; }
   [ ! -e "$home/zprofile-ran" ]
 
   tmux -L "$SOCKET" kill-server
@@ -233,7 +253,7 @@ start_focus_session() {
   done
 
   run tmux -L "$SOCKET" display -p '#{E:status-left}'
-  [[ "$output" == *"#e0af68"* ]]   # the alert colour
+  [[ "$output" == *"#e0af68"* ]] || { pane_diag; false; }   # the alert colour
   [[ "$output" == *" 1! "* ]]      # window 1, bell
 
   tmux -L "$SOCKET" kill-server

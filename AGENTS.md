@@ -76,7 +76,9 @@ Treat it as an operational repo, not just a collection of config files.
   A human's shell must not change because of this.
 - `zsh/.zshenv` runs for every zsh, scripts included: assignments only, no
   subprocesses, no output, and never probe paths under `/home` on macOS
-  (autofs; ~45 ms per shell). It only adds missing PATH entries.
+  (autofs; ~45 ms per shell). It only adds missing PATH entries, and sets
+  `skip_global_compinit=1` so Debian's `/etc/zsh/zshrc` does not run a second,
+  possibly prompting, compinit.
 - Neovim's reload poll (`init.lua`) checks unmodified, existing file buffers
   only, so it never raises a prompt mid-typing or repeats for a deleted file.
 
@@ -171,6 +173,10 @@ Two consequences worth remembering when writing tests:
 
 - Container jobs run as **root**, so anything asserting that a permission bit is
   enforced must skip when `id -u` is 0.
+- A test that types into an interactive zsh pane needs a HOME with a `.zshrc`
+  (else Debian's zsh-newuser-install) and `skip_global_compinit=1` in
+  `.zshenv` (else GitHub's Ubuntu runners stop at compinit's insecure-directory
+  prompt). `stowed_home` in `tests/tmux-config.bats` sets up both.
 - macOS has no `sha256sum`, no GNU `readlink -f` guarantee, and `/bin/bash` is
   3.2 — no `mapfile`, no `printf '\uHHHH'`, no associative arrays.
 - Isolate a subprocess's environment with `env -u NAME ...`, never `env -i`.

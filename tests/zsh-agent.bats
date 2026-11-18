@@ -77,3 +77,11 @@ env_path() {
   [ "$status" -eq 0 ]
   [[ "$output" != *"$T/home/.local/bin"* ]]
 }
+
+@test ".zshenv stops Debian's global compinit" {
+  # /etc/zsh/zshrc on Debian/Ubuntu runs compinit unless this is set; that
+  # doubles .zshrc's own and can stop at an "insecure directories" prompt.
+  run env HOME="$T/home" ZDOTDIR="$T/zdot" "$ZSH_BIN" -c 'print -r -- "${skip_global_compinit-unset}"'
+  [ "$status" -eq 0 ]
+  [ "$output" = "1" ]
+}

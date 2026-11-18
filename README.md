@@ -174,7 +174,9 @@ in any terminal or editor, are unaffected.
 `zsh/.zshenv` puts `~/.local/bin` and Homebrew on `PATH` for every zsh,
 including the non-interactive ones an agent may run commands in, which never
 read `.zprofile` or `.zshrc`. It only adds what is missing, so an existing
-order is kept. `EDITOR` and `VISUAL` are `nvim` when it is installed.
+order is kept. It also sets `skip_global_compinit=1`: Debian and Ubuntu's
+`/etc/zsh/zshrc` otherwise runs a second compinit before `.zshrc`, which can
+stop at an "insecure directories" prompt. `EDITOR` and `VISUAL` are `nvim` when it is installed.
 
 ## Tmux
 

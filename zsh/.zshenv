@@ -19,3 +19,10 @@
     [[ -d $dir ]] && (( ! ${path[(Ie)$dir]} )) && path=( $dir $path )
   done
 }
+
+# Debian/Ubuntu's /etc/zsh/zshrc runs compinit itself unless this is set first,
+# which is only possible here. .zshrc runs its own (cached) compinit, so the
+# global one doubles the work -- and where an fpath dir is group-writable it
+# stops at "Ignore insecure directories [y/n]?", which hangs an agent's shell.
+# Other platforms ignore the variable.
+skip_global_compinit=1
