@@ -17,7 +17,7 @@ jobs:
     name: ubuntu-latest
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install dependencies
         run: |
@@ -59,7 +59,7 @@ jobs:
             xclip xsel xorg-x11-server-Xvfb \
             procps-ng findutils diffutils
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Run tests
         timeout-minutes: 10
@@ -81,7 +81,7 @@ jobs:
         # once (printf '\uHHHH' in the tmux OS-label helper).
         bash: [system, homebrew]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install dependencies
         run: |
@@ -124,14 +124,14 @@ jobs:
             xclip xsel xorg-x11-server-Xvfb \
             procps-ng findutils diffutils
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Run the suite under kcov
         timeout-minutes: 15
         run: xvfb-run -a tests/coverage.sh
 
       - name: Upload to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/cobertura.xml
@@ -149,7 +149,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
@@ -162,7 +162,7 @@ jobs:
         run: brew install --quiet bats-core neovim
 
       - name: Cache lazy.nvim plugins
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.local/share/nvim/lazy
           key: nvim-lazy-${{ matrix.os }}-${{ hashFiles('nvim/.config/nvim/lua/plugins/*.lua', 'nvim/.config/nvim/init.lua') }}
