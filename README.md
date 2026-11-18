@@ -220,6 +220,15 @@ unzoomed by hand is not re-zoomed when it ends.
 gains or loses focus. Neovim uses this to fire `FocusGained` / `FocusLost`,
 which lets `autoread` reload a file another tool changed while you were away.
 
+### Pane startup
+
+New panes and windows start zsh as a **non-login** shell, so `~/.zprofile` (and
+on macOS `/etc/zprofile`'s `path_helper`) runs only in the shell that started
+the tmux server, not again in every pane. Panes inherit that server's
+environment, so put PATH setup in `~/.zprofile` or `~/.zshenv` and start tmux
+from a terminal as usual. A server launched some other way (launchd, systemd)
+will not have it. `escape-time` is 10 ms, so Esc in Neovim is not held back.
+
 ## Remote Clipboard over SSH
 
 This repository includes clipboard helpers that auto-select the best available

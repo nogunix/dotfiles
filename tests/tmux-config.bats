@@ -141,6 +141,45 @@ start_focus_session() {
   tmux -L "$SOCKET" kill-server
 }
 
+# --- pane startup ------------------------------------------------------------
+
+@test "panes start a non-login shell" {
+  command -v tmux >/dev/null || skip "tmux not installed"
+  [ -x /bin/zsh ] || skip "/bin/zsh not installed"
+
+  # A login shell would source .zprofile; an interactive one always sources
+  # .zshrc. Each leaves a marker, so the pair says which kind tmux started.
+  local home
+  home="$(stowed_home)"
+  printf 'touch "$HOME/zprofile-ran"\n' >"$home/.zprofile"
+  printf 'touch "$HOME/zshrc-ran"\n' >"$home/.zshrc"
+
+  env -u ZDOTDIR HOME="$home" \
+    tmux -L "$SOCKET" -f "$TMUX_CONF" new-session -d -x 80 -y 24
+
+  local i
+  for i in $(seq 1 50); do
+    [ -e "$home/zshrc-ran" ] && break
+    sleep 0.1
+  done
+  [ -e "$home/zshrc-ran" ]
+  [ ! -e "$home/zprofile-ran" ]
+
+  tmux -L "$SOCKET" kill-server
+}
+
+@test "escape-time stays short enough not to delay Esc in editors" {
+  command -v tmux >/dev/null || skip "tmux not installed"
+
+  env HOME="$(stowed_home)" \
+    tmux -L "$SOCKET" -f "$TMUX_CONF" new-session -d -x 80 -y 24
+  run tmux -L "$SOCKET" show-options -sv escape-time
+  [ "$status" -eq 0 ]
+  [ "$output" -le 10 ]
+
+  tmux -L "$SOCKET" kill-server
+}
+
 # --- os-label.sh -------------------------------------------------------------
 
 @test "os-label renders a label for this platform" {
