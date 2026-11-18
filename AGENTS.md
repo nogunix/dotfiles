@@ -49,6 +49,10 @@ Treat it as an operational repo, not just a collection of config files.
 - Plugins are managed via `lazy.nvim` in `nvim/.config/nvim/init.lua`.
 - Large plugin configurations should be moved to `nvim/.config/nvim/lua/plugins/`.
 - Ensure `lua_ls` diagnostics are clean before finishing.
+- LSP servers are enabled from the `servers` table in
+  `lua/plugins/mason.lua` through nvim-lspconfig and `vim.lsp.enable`. mason is
+  install-only: it loads on `:Mason*` or when a listed server's binary is
+  missing, never at startup. Keep it that way (`tests/nvim-config.bats`).
 
 ## Stow Folding
 
@@ -113,6 +117,7 @@ bats tests/clipboard-macos.bats      # macOS only; skips elsewhere
 bats tests/osc52.bats
 bats tests/config-portability.bats   # zsh -n / bash -n / lua / hardcoded $HOME
 bats tests/tmux-config.bats
+bats tests/nvim-config.bats          # LSP startup path; skips without plugins
 
 # Lint every shell script, including the extensionless wrappers
 tests/lint.sh

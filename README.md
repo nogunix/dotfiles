@@ -135,6 +135,22 @@ needs a real macOS pasteboard (the macOS jobs exercise it, but coverage only
 runs on Fedora), and two `return 1` arms in `bootstrap.sh` are unreachable
 defensive code.
 
+## Neovim
+
+### LSP servers
+
+Servers are enabled from the `servers` table at the top of
+`nvim/.config/nvim/lua/plugins/mason.lua`, and start when a file is opened.
+mason is only used to install them: it loads for `:Mason` and friends, or by
+itself when a listed server is not installed yet, and otherwise never — it
+costs ~20 ms to load. A server installed through `:Mason` therefore has to be
+added to that table before it runs.
+
+`lua_ls` indexes Neovim's own runtime only, not every plugin on the
+runtimepath, which brings it up in ~1.4 s instead of ~3.7 s. The trade-off:
+when editing this config, plugin modules (`require('lazy')` and so on) are not
+type-checked.
+
 ## Tmux
 
 ### Status bar: Nerd Font required
