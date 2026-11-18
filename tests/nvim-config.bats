@@ -74,3 +74,32 @@ probe() {
   run cat "$OUT"
   [ "$output" = "on PATH" ]
 }
+
+@test "a file changed on disk is reloaded while Neovim sits idle" {
+  # An agent or another editor working in the same tree changes files under an
+  # open, focused Neovim; nothing but the poll in init.lua notices that.
+  need_plugins lazy.nvim
+  local file="$NVIM_TMP/edited.txt"
+  printf 'before\n' >"$file"
+  probe "$file" "
+    vim.fn.writefile({ 'after' }, '$file')
+    vim.wait(2500, function() return false end, 50)
+    out[1] = vim.api.nvim_buf_get_lines(0, 0, -1, false)[1]
+  "
+  run cat "$OUT"
+  [ "$output" = "after" ]
+}
+
+@test "the reload poll leaves a buffer with local edits alone" {
+  need_plugins lazy.nvim
+  local file="$NVIM_TMP/edited.txt"
+  printf 'before\n' >"$file"
+  probe "$file" "
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'local edit' })
+    vim.fn.writefile({ 'after' }, '$file')
+    vim.wait(2500, function() return false end, 50)
+    out[1] = vim.api.nvim_buf_get_lines(0, 0, -1, false)[1]
+  "
+  run cat "$OUT"
+  [ "$output" = "local edit" ]
+}

@@ -14,6 +14,7 @@ Treat it as an operational repo, not just a collection of config files.
 - `bootstrap.sh`: entrypoint for install, stow, unstow, backup, and optional package installation.
 - `zsh/.local/bin/`: compatibility wrappers and helper commands.
 - `zsh/.zshrc`: interactive shell behavior and plugin loading.
+- `zsh/.zshenv`: PATH entries every zsh needs, including non-interactive ones.
 - `nvim/.config/nvim/`: Neovim configuration (Lazy.nvim based).
 - `tmux/.config/tmux/`: `tmux.conf` (behavior, clipboard integration and the
   status bar) plus the two helpers it calls, `os-label.sh` and `git-branch.sh`.
@@ -64,6 +65,21 @@ Treat it as an operational repo, not just a collection of config files.
   relied on, so new plugin files created through it land in the repo.
 - A symlink there that points outside the repo is the user's; never remove it.
 
+## Agent Shell Invariants
+
+- Stay tool-neutral. Agent shells are recognised only through the
+  `_zsh_agent_markers` list in `zsh/.zshrc`; supporting another agent is one
+  line there, not a branch of its own. List only variables the tool documents
+  or verifiably sets.
+- An agent shell must not load zinit or anything that redraws the prompt line,
+  and must not block: `PAGER`/`GIT_PAGER` are `cat`, `GIT_EDITOR` is `true`.
+  A human's shell must not change because of this.
+- `zsh/.zshenv` runs for every zsh, scripts included: assignments only, no
+  subprocesses, no output, and never probe paths under `/home` on macOS
+  (autofs; ~45 ms per shell). It only adds missing PATH entries.
+- Neovim's reload poll (`init.lua`) checks unmodified, existing file buffers
+  only, so it never raises a prompt mid-typing or repeats for a deleted file.
+
 ## Clipboard Invariants
 
 - `clip` should remain the stable user-facing copy command.
@@ -88,7 +104,8 @@ Treat it as an operational repo, not just a collection of config files.
   `git-branch.sh` emits `@git_pre` / `@git_post` / `@git_none` references
   rather than colours of its own, so keep the two in sync.
 - The bar assumes a Nerd Font: the powerline separators (U+E0B0, U+E0B2), the
-  branch glyph (U+E0A0) in `tmux.conf`, and the OS glyphs in `os-label.sh`.
+  branch (U+E0A0) and bell (U+F0F3) glyphs in `tmux.conf`, and the OS glyphs
+  in `os-label.sh`.
   Adding or changing a glyph means updating the Nerd Font table in
   `README.md` ("Tmux") in the same turn.
 - Focus mode (`prefix+F`) keeps its state in `@focus_mode`, because `status`
@@ -117,7 +134,9 @@ bats tests/clipboard-macos.bats      # macOS only; skips elsewhere
 bats tests/osc52.bats
 bats tests/config-portability.bats   # zsh -n / bash -n / lua / hardcoded $HOME
 bats tests/tmux-config.bats
-bats tests/nvim-config.bats          # LSP startup path; skips without plugins
+bats tests/nvim-config.bats          # LSP startup, reload poll; skips without plugins
+bats tests/zsh-agent.bats            # agent-shell mode and .zshenv PATH
+bats tests/zsh-editor.bats           # EDITOR / VISUAL
 
 # Lint every shell script, including the extensionless wrappers
 tests/lint.sh

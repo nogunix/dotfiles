@@ -180,6 +180,50 @@ start_focus_session() {
   tmux -L "$SOCKET" kill-server
 }
 
+# --- keys and alerts ---------------------------------------------------------
+
+@test "Shift+Enter reaches an app that asks for it as its own sequence" {
+  command -v tmux >/dev/null || skip "tmux not installed"
+
+  # The app opts in with modifyOtherKeys, as editors and agent CLIs do; cat
+  # cannot send that request itself, so the pane's shell does it first.
+  env HOME="$(stowed_home)" \
+    tmux -L "$SOCKET" -f "$TMUX_CONF" new-session -d -x 80 -y 24 \
+    "printf '\\033[>4;2m'; exec cat -v"
+  sleep 0.5
+  tmux -L "$SOCKET" send-keys x S-Enter y
+  sleep 0.3
+  run tmux -L "$SOCKET" capture-pane -p
+  # Without extended-keys, Shift+Enter arrives as a bare newline.
+  [[ "$output" == *'x^[[27;2;13~y'* ]]
+
+  tmux -L "$SOCKET" kill-server
+}
+
+@test "a bell in another window shows up in the status bar" {
+  command -v tmux >/dev/null || skip "tmux not installed"
+
+  env HOME="$(stowed_home)" \
+    tmux -L "$SOCKET" -f "$TMUX_CONF" new-session -d -x 120 -y 24
+  # No chip while nothing has rung: the plain blue-to-gray separator.
+  run tmux -L "$SOCKET" display -p '#{E:status-left}'
+  [[ "$output" != *"#e0af68"* ]]
+
+  tmux -L "$SOCKET" new-window -d
+  tmux -L "$SOCKET" send-keys -t :1 "printf '\\a'" Enter
+  local i
+  for i in $(seq 1 30); do
+    [ -n "$(tmux -L "$SOCKET" display -p '#{session_alerts}')" ] && break
+    sleep 0.1
+  done
+
+  run tmux -L "$SOCKET" display -p '#{E:status-left}'
+  [[ "$output" == *"#e0af68"* ]]   # the alert colour
+  [[ "$output" == *" 1! "* ]]      # window 1, bell
+
+  tmux -L "$SOCKET" kill-server
+}
+
 # --- os-label.sh -------------------------------------------------------------
 
 @test "os-label renders a label for this platform" {

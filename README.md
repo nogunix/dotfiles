@@ -151,6 +151,31 @@ runtimepath, which brings it up in ~1.4 s instead of ~3.7 s. The trade-off:
 when editing this config, plugin modules (`require('lazy')` and so on) are not
 type-checked.
 
+### Files changed outside Neovim
+
+A buffer whose file changes on disk (an AI agent or another editor working in
+the same tree, a `git checkout`) reloads within about a second, even while
+Neovim keeps focus, with a `Reloaded <file>` message. A buffer with unsaved
+edits is never reloaded behind your back; the usual "file changed" prompt comes
+when you next enter it or focus Neovim.
+
+## Zsh
+
+### Agent shells
+
+Coding agents (Antigravity, Claude Code, ...) run commands through a terminal
+and parse the output, so a shell they drive gets a plain setup: no zinit
+plugins (autosuggestions redraws the line), `PAGER=cat` and `GIT_PAGER=cat`,
+and `GIT_EDITOR=true`, so `git log` or a stray `git commit` never sits waiting
+for a key nobody presses. A shell is treated this way when one of the variables
+in `_zsh_agent_markers` near the top of `zsh/.zshrc` is set; your own shells,
+in any terminal or editor, are unaffected.
+
+`zsh/.zshenv` puts `~/.local/bin` and Homebrew on `PATH` for every zsh,
+including the non-interactive ones an agent may run commands in, which never
+read `.zprofile` or `.zshrc`. It only adds what is missing, so an existing
+order is kept. `EDITOR` and `VISUAL` are `nvim` when it is installed.
+
 ## Tmux
 
 ### Status bar: Nerd Font required
@@ -165,11 +190,12 @@ Glyphs in use:
 |-------|------------|-------|
 | `` `` | U+E0B0 / U+E0B2 | powerline separators between chips (`tmux.conf`) |
 | `` | U+E0A0 | the git branch chip (`tmux.conf`) |
+| `` | U+F0F3 | the bell chip (`tmux.conf`) |
 | `` | U+F179 | the OS chip on macOS (`os-label.sh`) |
 | `` | U+F17C | the OS chip on Linux (`os-label.sh`) |
 | `` | U+F120 | the OS chip on BSD and anything else (`os-label.sh`) |
 
-Without a Nerd Font the bar still works, but those five characters render as
+Without a Nerd Font the bar still works, but those six characters render as
 tofu boxes (`□`).
 
 ### Installing one
@@ -204,13 +230,14 @@ at, not on the remote host.
 
 ### Running without one
 
-Blank the three glyph variables near the top of the status section in
+Blank the four glyph variables near the top of the status section in
 `tmux/.config/tmux/tmux.conf`:
 
 ```tmux
 %hidden SEP_R=""
 %hidden SEP_L=""
 %hidden GIT_SYM=""
+%hidden BELL_SYM=""
 ```
 
 and drop the `glyph=` assignments in `tmux/.config/tmux/os-label.sh`. The chips
@@ -235,6 +262,16 @@ unzoomed by hand is not re-zoomed when it ends.
 `focus-events` is on, so applications in a pane are told when the terminal
 gains or loses focus. Neovim uses this to fire `FocusGained` / `FocusLost`,
 which lets `autoread` reload a file another tool changed while you were away.
+
+A yellow chip appears after the session chip when a window other than the
+current one rings the bell, listing those windows (`2!`) until you visit them:
+a long build, or an AI agent in another window reporting it is done. The window
+list is hidden, so this is where that shows.
+
+`extended-keys` is on, so an application that asks for it can tell
+`Shift`+`Enter` (a newline in most agent CLIs) from `Enter` (submit). The
+outer terminal has to report modified keys to tmux too; that is enabled for
+terminals whose `TERM` starts with `xterm`, which most modern ones do.
 
 ### Pane startup
 

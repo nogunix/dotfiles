@@ -40,6 +40,43 @@ vim.api.nvim_create_autocmd({ "BufWinEnter", "InsertLeave" }, {
 -- (:help nvim-defaults); re-enabling them only re-sources the runtime files.
 vim.opt.title = true -- Display filename in terminal title bar
 
+-- Pick up files changed on disk by another process: an AI agent or another
+-- editor working in the same tree, a git checkout. 'autoread' (on by default)
+-- only reloads when Neovim checks, and by itself it checks on focus changes.
+local autoreload = vim.api.nvim_create_augroup('dotfiles_autoreload', { clear = true })
+local function can_checktime()
+  -- Not from the cmdline, cmdwin or a hit-enter/confirm prompt.
+  return not vim.api.nvim_get_mode().mode:match('^[cr!]') and vim.fn.getcmdwintype() == ''
+end
+vim.api.nvim_create_autocmd({ 'FocusGained', 'BufEnter', 'TermLeave', 'CursorHold' }, {
+  group = autoreload,
+  callback = function()
+    if can_checktime() then vim.cmd.checktime() end
+  end,
+})
+-- While Neovim just sits there focused, none of those events fire, so also
+-- poll once a second (one stat per buffer). Only unmodified file buffers: they
+-- reload silently, whereas a clash with local edits puts up a prompt, and that
+-- should come from an event above rather than land in the middle of typing.
+vim.uv.new_timer():start(1000, 1000, vim.schedule_wrap(function()
+  if not can_checktime() then return end
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    local name = vim.api.nvim_buf_get_name(buf)
+    -- A deleted file is reported once by the events above; checking it every
+    -- second would re-fire FileChangedShellPost every second.
+    if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].buftype == ''
+        and not vim.bo[buf].modified and name ~= '' and vim.uv.fs_stat(name) then
+      vim.cmd.checktime(buf)
+    end
+  end
+end))
+vim.api.nvim_create_autocmd('FileChangedShellPost', {
+  group = autoreload,
+  callback = function(ev)
+    vim.notify('Reloaded ' .. vim.fn.fnamemodify(ev.file, ':~:.') .. ' (changed on disk)')
+  end,
+})
+
 -- No plugin here needs the perl/ruby/node/python3 hosts. Skipping them avoids
 -- the interpreter probe at startup and keeps :checkhealth quiet.
 vim.g.loaded_perl_provider = 0

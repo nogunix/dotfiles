@@ -9,6 +9,34 @@ if [[ -f ~/.zshrc && ( ! -f ~/.zshrc.zwc || ~/.zshrc -nt ~/.zshrc.zwc ) ]]; then
 fi
 
 #==============================================================================
+# Shells driven by an AI agent
+#==============================================================================
+# Coding agents run commands through a PTY and parse what comes back. Anything
+# that redraws the line (autosuggestions), prints a banner (the zinit
+# installer), or stops to wait for a key (a pager, an editor) leaves them
+# reading garbage or stuck on "Running...". Such shells get a plain setup: no
+# plugins (the zinit section is skipped) and nothing that blocks. A human's
+# shell is unaffected, whichever editor or terminal it runs in.
+#
+# Each agent marks its shells with an environment variable of its own; adding
+# one is a line here. Only list variables a tool documents or verifiably sets.
+_zsh_agent_markers=(
+  ANTIGRAVITY_AGENT   # Google Antigravity
+  CLAUDECODE          # Claude Code
+)
+_zsh_agent=0
+for _m in $_zsh_agent_markers; do
+  [[ -n ${(P)_m-} ]] && { _zsh_agent=1; break; }
+done
+unset _m _zsh_agent_markers
+if (( _zsh_agent )); then
+  export PAGER=cat GIT_PAGER=cat
+  # Fail fast rather than open an editor nobody can see: `git commit` without
+  # -m aborts on the empty message, `git rebase -i` runs the todo as written.
+  export GIT_EDITOR=true
+fi
+
+#==============================================================================
 # History
 #==============================================================================
 HISTFILE=$HOME/.zsh_history     # File to save command history
@@ -110,34 +138,37 @@ bindkey -e
 #==============================================================================
 # Zinit (Plugin Manager)
 #==============================================================================
-### Added by Zinit's installer
-if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
-    print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"
-    command mkdir -p "$HOME/.local/share/zinit" && command chmod g-rwX "$HOME/.local/share/zinit"
-    command git clone https://github.com/zdharma-continuum/zinit "$HOME/.local/share/zinit/zinit.git" && \
-        print -P "%F{33} %F{34}Installation successful.%f%b" || \
-        print -P "%F{160} The clone has failed.%f%b"
+# Agent shells get none of it: see "AI agent shells" above.
+if (( ! _zsh_agent )); then
+  ### Added by Zinit's installer
+  if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
+      print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"
+      command mkdir -p "$HOME/.local/share/zinit" && command chmod g-rwX "$HOME/.local/share/zinit"
+      command git clone https://github.com/zdharma-continuum/zinit "$HOME/.local/share/zinit/zinit.git" && \
+          print -P "%F{33} %F{34}Installation successful.%f%b" || \
+          print -P "%F{160} The clone has failed.%f%b"
+  fi
+
+  source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
+  autoload -Uz _zinit
+  (( ${+_comps} )) && _comps[zinit]=_zinit
+
+  # --- Plugins ---
+  # Turbo mode: these load just after the first prompt is drawn rather than
+  # blocking it. zinit walks the list one plugin per prompt, so autosuggestions
+  # becomes active from the second prompt onwards.
+  zinit wait lucid light-mode for \
+      atinit'_zsh_compinit; zicdreplay' \
+          zsh-users/zsh-completions \
+      atload'_zsh_autosuggest_start' \
+          zsh-users/zsh-autosuggestions
+
+  # zoxide (replaces rupa/z). Fetched as a prebuilt binary from GitHub releases,
+  # so no package manager is needed on either macOS or Linux.
+  zinit ice from"gh-r" as"command" pick"zoxide"
+  zinit light ajeetdsouza/zoxide
+  ### End of Zinit's installer chunk
 fi
-
-source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
-autoload -Uz _zinit
-(( ${+_comps} )) && _comps[zinit]=_zinit
-
-# --- Plugins ---
-# Turbo mode: these load just after the first prompt is drawn rather than
-# blocking it. zinit walks the list one plugin per prompt, so autosuggestions
-# becomes active from the second prompt onwards.
-zinit wait lucid light-mode for \
-    atinit'_zsh_compinit; zicdreplay' \
-        zsh-users/zsh-completions \
-    atload'_zsh_autosuggest_start' \
-        zsh-users/zsh-autosuggestions
-
-# zoxide (replaces rupa/z). Fetched as a prebuilt binary from GitHub releases,
-# so no package manager is needed on either macOS or Linux.
-zinit ice from"gh-r" as"command" pick"zoxide"
-zinit light ajeetdsouza/zoxide
-### End of Zinit's installer chunk
 
 #==============================================================================
 # zoxide (smarter cd: `z <query>` to jump, `zi` for an interactive pick)
@@ -164,6 +195,12 @@ fi
 # Aliases & Exports
 #==============================================================================
 export PATH="$HOME/.local/bin:$PATH"
+
+# Editor for anything that shells out to one: git commit, crontab -e, a CLI
+# tool's "edit in $EDITOR" key. Unset, those fall back to a bare vi.
+if (( $+commands[nvim] )); then
+  export EDITOR=nvim VISUAL=nvim
+fi
 
 # Clipboard copy shortcut:
 # Prefer the repo helper, but degrade gracefully if the helper is not installed.

@@ -60,10 +60,12 @@ setup() {
   # Stowed files land in a different $HOME on every machine, and /home/... is
   # not even the right prefix on macOS. Only the files that get linked into
   # $HOME are in scope; machine-local tooling state is not.
+  # /home/linuxbrew is Homebrew's fixed Linux prefix, the same on every machine,
+  # not somebody's home directory.
   run bash -c "
     cd '$REPO_ROOT' &&
     grep -rnE '/(home|Users)/[a-zA-Z0-9._-]+/' \
-      bootstrap.sh zsh nvim tmux ctags || true
+      bootstrap.sh zsh nvim tmux ctags | grep -v '/home/linuxbrew/' || true
   "
   [ -z "$output" ]
 }
