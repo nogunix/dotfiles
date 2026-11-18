@@ -7,6 +7,7 @@
 setup() {
   REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
   NVIM_TMP="$(mktemp -d "${TMPDIR:-/tmp}/nvim-config.XXXXXX")"
+  export TMPDIR="$NVIM_TMP"
   export XDG_CONFIG_HOME="$REPO_ROOT/nvim/.config"
   export XDG_CACHE_HOME="$NVIM_TMP/cache"
   export XDG_STATE_HOME="$NVIM_TMP/state"

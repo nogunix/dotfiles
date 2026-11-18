@@ -165,11 +165,11 @@ when you next enter it or focus Neovim.
 
 Coding agents (Antigravity, Claude Code, ...) run commands through a terminal
 and parse the output, so a shell they drive gets a plain setup: no zinit
-plugins (autosuggestions redraws the line), `PAGER=cat` and `GIT_PAGER=cat`,
-and `GIT_EDITOR=true`, so `git log` or a stray `git commit` never sits waiting
-for a key nobody presses. A shell is treated this way when one of the variables
-in `_zsh_agent_markers` near the top of `zsh/.zshrc` is set; your own shells,
-in any terminal or editor, are unaffected.
+plugins (autosuggestions redraws the line) or `zoxide` hooks, `PAGER=cat` and
+`GIT_PAGER=cat`, and `GIT_EDITOR=true`, so `git log` or a stray `git commit`
+never sits waiting for a key nobody presses. A shell is treated this way when
+one of the variables in `_zsh_agent_markers` near the top of `zsh/.zshrc` is
+set; your own shells, in any terminal or editor, are unaffected.
 
 `zsh/.zshenv` puts `~/.local/bin` and Homebrew on `PATH` for every zsh,
 including the non-interactive ones an agent may run commands in, which never
@@ -356,7 +356,7 @@ When not using `--adopt`, any existing file that would conflict is automatically
 
 Stow normally *folds* a directory it can own outright into a single symlink, so
 `~/.local/bin` used to become a link to `zsh/.local/bin` — and every binary an
-installer dropped there (Claude Code, uv, pipx, ...) ended up in the repo.
+installer dropped there (Claude Code, agy, uv, pipx, ...) ended up in the repo.
 `bootstrap.sh` now always creates `~/.local/bin` as a real directory and links
 the wrappers into it one by one. Other directories (`~/.config/nvim`, for one)
 still fold, so a new file created there still lands in the repo.

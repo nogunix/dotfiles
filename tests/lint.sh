@@ -7,7 +7,7 @@
 # one place so CI and local runs lint exactly the same files.
 #
 # Deliberately not linted: *.bats (shellcheck cannot parse @test) and
-# zsh/.zshrc (zsh syntax; tests/config-portability.bats runs `zsh -n` on it).
+# zsh/.zshrc / zsh/.zshenv (zsh syntax; tests/config-portability.bats runs `zsh -n` on them).
 
 set -euo pipefail
 

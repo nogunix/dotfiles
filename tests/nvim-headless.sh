@@ -15,6 +15,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
+export TMPDIR="$tmp_root"
 export XDG_CONFIG_HOME="$repo_root/nvim/.config"
 export XDG_CACHE_HOME="$tmp_root/cache"
 export XDG_STATE_HOME="$tmp_root/state"

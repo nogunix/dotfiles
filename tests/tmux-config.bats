@@ -15,6 +15,9 @@ setup() {
   TMUX_DIR="$REPO_ROOT/tmux/.config/tmux"
   TMUX_CONF="$TMUX_DIR/tmux.conf"
   TEST_TMP="$(cd -- "$(mktemp -d "${TMPDIR:-/tmp}/tmux-conf.XXXXXX")" && pwd -P)"
+  # Sandboxed agent runners (e.g. agy) may mount /tmp/tmux-$UID with mode 0777,
+  # which tmux refuses as unsafe; keep test sockets inside our own temp dir.
+  export TMUX_TMPDIR="$TEST_TMP"
   # One server per test. $$ is the same for every test in the file, and a
   # new-session that reaches the previous test's server while it is still
   # shutting down lands in a session that dies under it (seen on CI).

@@ -4,7 +4,8 @@
 # NOTE: zsh's -nt is false when the right-hand file is missing (bash returns
 # true), so testing only `.zshrc -nt .zshrc.zwc` never fires on a machine that
 # has no .zwc yet -- the guard would wait for the file it is supposed to create.
-if [[ -f ~/.zshrc && ( ! -f ~/.zshrc.zwc || ~/.zshrc -nt ~/.zshrc.zwc ) ]]; then
+# -w ~ skips compilation in a read-only $HOME sandbox.
+if [[ -w ~ && -f ~/.zshrc && ( ! -f ~/.zshrc.zwc || ~/.zshrc -nt ~/.zshrc.zwc ) ]]; then
   zcompile ~/.zshrc
 fi
 
@@ -173,7 +174,9 @@ fi
 #==============================================================================
 # zoxide (smarter cd: `z <query>` to jump, `zi` for an interactive pick)
 #==============================================================================
-if command -v zoxide >/dev/null 2>&1; then
+# Agent shells skip this too: zoxide's chpwd hook would record every directory
+# an agent visits into the user's frecent DB.
+if (( ! _zsh_agent )) && command -v zoxide >/dev/null 2>&1; then
   # `zoxide init` costs a subprocess on every startup, so cache its output and
   # regenerate only when the binary itself is newer. As with .zshrc.zwc above,
   # zsh's -nt is false when the right-hand file is missing, hence the -f test.
@@ -194,8 +197,6 @@ fi
 #==============================================================================
 # Aliases & Exports
 #==============================================================================
-export PATH="$HOME/.local/bin:$PATH"
-
 # Editor for anything that shells out to one: git commit, crontab -e, a CLI
 # tool's "edit in $EDITOR" key. Unset, those fall back to a bare vi.
 if (( $+commands[nvim] )); then

@@ -6,6 +6,7 @@ setup() {
   set -euo pipefail
   REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
   TS_TMP="$(mktemp -d "${TMPDIR:-/tmp}/nvim-ts.XXXXXX")"
+  export TMPDIR="$TS_TMP"
   export XDG_CONFIG_HOME="$REPO_ROOT/nvim/.config"
   export XDG_CACHE_HOME="$TS_TMP/cache"
   export XDG_STATE_HOME="$TS_TMP/state"

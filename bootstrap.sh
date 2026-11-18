@@ -5,7 +5,7 @@ set -euo pipefail
 # Add "ctags" so we can manage ~/.ctags.d via GNU Stow
 DEFAULT_STOW_PKGS=("zsh" "nvim" "tmux" "ctags")
 
-# Directories that other tools install into (Claude Code, uv, pipx, ...).
+# Directories that other tools install into (Claude Code, agy, uv, pipx, ...).
 # Left alone, stow folds such a directory into one symlink back into the repo,
 # or folds its parent when that does not exist yet, and from then on every
 # binary installed there lands in the working tree. These are always created

@@ -71,14 +71,17 @@ Treat it as an operational repo, not just a collection of config files.
   `_zsh_agent_markers` list in `zsh/.zshrc`; supporting another agent is one
   line there, not a branch of its own. List only variables the tool documents
   or verifiably sets.
-- An agent shell must not load zinit or anything that redraws the prompt line,
-  and must not block: `PAGER`/`GIT_PAGER` are `cat`, `GIT_EDITOR` is `true`.
-  A human's shell must not change because of this.
+- An agent shell must not load zinit, initialize zoxide (`chpwd` DB updates or
+  interactive `zi`), or run anything that redraws the prompt line, and must not
+  block: `PAGER`/`GIT_PAGER` are `cat`, `GIT_EDITOR` is `true`. A human's shell
+  must not change because of this.
 - `zsh/.zshenv` runs for every zsh, scripts included: assignments only, no
   subprocesses, no output, and never probe paths under `/home` on macOS
   (autofs; ~45 ms per shell). It only adds missing PATH entries, and sets
   `skip_global_compinit=1` so Debian's `/etc/zsh/zshrc` does not run a second,
   possibly prompting, compinit.
+- `.zshrc` must skip `zcompile` when `~` is not writable (e.g. a read-only
+  `$HOME` sandbox).
 - Neovim's reload poll (`init.lua`) checks unmodified, existing file buffers
   only, so it never raises a prompt mid-typing or repeats for a deleted file.
 
@@ -182,6 +185,11 @@ Two consequences worth remembering when writing tests:
 - Isolate a subprocess's environment with `env -u NAME ...`, never `env -i`.
   A cleared environment also drops what kcov uses to trace bash, so the run
   still passes but contributes nothing to coverage.
+- `tmux` and `nvim` tests must isolate `TMUX_TMPDIR` (for `tmux`) and
+  `TMPDIR`/`XDG_STATE_HOME` (for `nvim`) inside their own temp dir: sandboxed
+  agent environments (such as `agy`) mount `/tmp/tmux-$UID` and `/tmp/nvim.$USER`
+  with mode `0777`, which `tmux` and `nvim` reject (with `nvim` otherwise
+  falling back to writing `./nvim.log` in the working tree).
 
 ### Tests must not touch the working tree
 

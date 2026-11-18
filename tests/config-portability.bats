@@ -6,14 +6,21 @@
 
 setup() {
   REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/.." && pwd -P)"
+  TEST_TMP="$(mktemp -d "${TMPDIR:-/tmp}/portability.XXXXXX")"
 }
 
-@test "zshrc parses with the zsh on this machine" {
+teardown() {
+  [ -n "${TEST_TMP:-}" ] && rm -rf "$TEST_TMP"
+}
+
+@test "zshrc and zshenv parse with the zsh on this machine" {
   command -v zsh >/dev/null || skip "zsh not installed"
 
-  run zsh -n "$REPO_ROOT/zsh/.zshrc"
-  [ "$status" -eq 0 ]
-  [ -z "$output" ]
+  for f in "$REPO_ROOT/zsh/.zshrc" "$REPO_ROOT/zsh/.zshenv"; do
+    run zsh -n "$f"
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+  done
 }
 
 @test "shell scripts parse with bash" {
@@ -74,7 +81,11 @@ setup() {
   command -v nvim >/dev/null || skip "nvim not installed"
 
   while IFS= read -r lua; do
-    run nvim --headless -u NONE -c "lua assert(loadfile('$lua'))" -c "qa!"
+    # Isolate TMPDIR and XDG_STATE_HOME: sandboxed agent runners (e.g. agy) may
+    # mount /tmp/nvim.$USER with mode 0777, causing nvim to fail vim_mktempdir
+    # and fall back to writing ./nvim.log when ~/.local/state is read-only.
+    run env TMPDIR="$TEST_TMP" XDG_STATE_HOME="$TEST_TMP" \
+      nvim --headless -u NONE -c "lua assert(loadfile('$lua'))" -c "qa!"
     [ "$status" -eq 0 ] || {
       echo "lua parse failed for $lua: $output"
       false
