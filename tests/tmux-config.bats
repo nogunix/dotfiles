@@ -15,7 +15,10 @@ setup() {
   TMUX_DIR="$REPO_ROOT/tmux/.config/tmux"
   TMUX_CONF="$TMUX_DIR/tmux.conf"
   TEST_TMP="$(cd -- "$(mktemp -d "${TMPDIR:-/tmp}/tmux-conf.XXXXXX")" && pwd -P)"
-  SOCKET="dotfiles-test-$$"
+  # One server per test. $$ is the same for every test in the file, and a
+  # new-session that reaches the previous test's server while it is still
+  # shutting down lands in a session that dies under it (seen on CI).
+  SOCKET="dotfiles-test-$$-${BATS_TEST_NUMBER}"
 }
 
 teardown() {
@@ -29,6 +32,9 @@ stowed_home() {
   local home="$TEST_TMP/home"
   mkdir -p "$home/.config"
   ln -sfn "$TMUX_DIR" "$home/.config/tmux"
+  # With no startup file at all, Debian's zsh opens zsh-newuser-install in the
+  # pane, which swallows whatever a test types into it.
+  : >"$home/.zshrc"
   printf '%s\n' "$home"
 }
 
@@ -190,12 +196,21 @@ start_focus_session() {
   env HOME="$(stowed_home)" \
     tmux -L "$SOCKET" -f "$TMUX_CONF" new-session -d -x 80 -y 24 \
     "printf '\\033[>4;2m'; exec cat -v"
-  sleep 0.5
+  # Keys sent before cat is reading are lost, so wait for it.
+  local i
+  for i in $(seq 1 50); do
+    [ "$(tmux -L "$SOCKET" display -p '#{pane_current_command}')" = cat ] && break
+    sleep 0.1
+  done
   tmux -L "$SOCKET" send-keys x S-Enter y
-  sleep 0.3
+  for i in $(seq 1 20); do
+    tmux -L "$SOCKET" capture-pane -p | grep -q 'y' && break
+    sleep 0.1
+  done
   run tmux -L "$SOCKET" capture-pane -p
-  # Without extended-keys, Shift+Enter arrives as a bare newline.
-  [[ "$output" == *'x^[[27;2;13~y'* ]]
+  # Without extended-keys, Shift+Enter arrives as a bare newline. tmux 3.5+
+  # encodes it xterm-style by default, 3.4 as CSI u; either is distinct.
+  [[ "$output" == *'x^[[27;2;13~y'* || "$output" == *'x^[[13;2uy'* ]]
 
   tmux -L "$SOCKET" kill-server
 }
@@ -212,7 +227,7 @@ start_focus_session() {
   tmux -L "$SOCKET" new-window -d
   tmux -L "$SOCKET" send-keys -t :1 "printf '\\a'" Enter
   local i
-  for i in $(seq 1 30); do
+  for i in $(seq 1 50); do
     [ -n "$(tmux -L "$SOCKET" display -p '#{session_alerts}')" ] && break
     sleep 0.1
   done
