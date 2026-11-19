@@ -17,7 +17,10 @@ setup() {
   TEST_TMP="$(cd -- "$(mktemp -d "${TMPDIR:-/tmp}/tmux-conf.XXXXXX")" && pwd -P)"
   # Sandboxed agent runners (e.g. agy) may mount /tmp/tmux-$UID with mode 0777,
   # which tmux refuses as unsafe; keep test sockets inside our own temp dir.
-  export TMUX_TMPDIR="$TEST_TMP"
+  # Not under $TEST_TMP: macOS's $TMPDIR is long enough to push the socket
+  # path past the 104-byte sun_path limit ("File name too long").
+  TMUX_TMPDIR="$(mktemp -d /tmp/tmx.XXXXXX)"
+  export TMUX_TMPDIR
   # One server per test. $$ is the same for every test in the file, and a
   # new-session that reaches the previous test's server while it is still
   # shutting down lands in a session that dies under it (seen on CI).
@@ -26,6 +29,7 @@ setup() {
 
 teardown() {
   tmux -L "$SOCKET" kill-server 2>/dev/null || true
+  [ -n "${TMUX_TMPDIR:-}" ] && rm -rf "$TMUX_TMPDIR"
   [ -n "${TEST_TMP:-}" ] && rm -rf "$TEST_TMP"
 }
 
